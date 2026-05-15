@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金融监管知识图谱系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:13px;color:#1a1a1a;background:#f0f2f5;height:100vh;overflow:hidden}
+/* Top Nav */
+.topnav{display:flex;align-items:center;height:48px;background:#fff;border-bottom:0.5px solid #e0e0e0;padding:0 16px;gap:4px;position:fixed;top:0;left:0;right:0;z-index:100}
+.topnav .logo{display:flex;align-items:center;gap:8px;margin-right:20px}
+.topnav .logo-icon{width:28px;height:28px;background:#1677ff;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:500}
+.topnav .logo-text{font-size:14px;font-weight:500;color:#1a1a1a}
+.nav-item{padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;color:#595959;white-space:nowrap;transition:background 0.15s}
+.nav-item:hover{background:#f5f5f5;color:#1a1a1a}
+.nav-item.active{color:#1677ff;background:#e6f4ff}
+.nav-item.active.kg{color:#1677ff}
+.nav-item{position:relative}
+.kg-submenu{position:absolute;top:100%;left:0;background:#fff;border:0.5px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);padding:4px 0;min-width:140px;display:none;z-index:200;margin-top:4px}
+.kg-submenu.show{display:block}
+.kg-submenu-item{padding:8px 16px;font-size:13px;color:#595959;cursor:pointer;white-space:nowrap;transition:all 0.15s}
+.kg-submenu-item:hover{background:#f0f6ff;color:#1677ff}
+.nav-sep{flex:1}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:#1677ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;cursor:pointer}
+/* Layout */
+.main-layout{display:flex;height:calc(100vh - 48px);margin-top:48px}
+/* Sidebar */
+.sidebar{width:260px;background:#fff;border-right:0.5px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 16px;border-bottom:0.5px solid #f0f0f0}
+.sidebar-title{font-size:14px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
+.sidebar-actions{display:flex;gap:6px}
+.btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:5px;font-size:12px;cursor:pointer;border:none;white-space:nowrap;transition:all 0.15s}
+.btn-primary{background:#1677ff;color:#fff}
+.btn-primary:hover{background:#0d6efd}
+.btn-outline{background:#fff;color:#595959;border:0.5px solid #d9d9d9}
+.btn-outline:hover{background:#fafafa;color:#1a1a1a}
+.btn-success{background:#52c41a;color:#fff}
+.btn-success:hover{background:#49b318}
+.btn-danger{background:#ff4d4f;color:#fff}
+.btn-danger:hover{background:#e84446}
+.btn-warning{background:#fa8c16;color:#fff}
+.search-box{padding:10px 16px;border-bottom:0.5px solid #f0f0f0}
+.search-input{width:100%;height:30px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:12px;color:#595959;outline:none;background:#fafafa}
+.search-input:focus{border-color:#1677ff;background:#fff}
+.tree-area{flex:1;overflow-y:auto;padding:8px 0}
+.tree-dir{cursor:pointer}
+.tree-dir-header{display:flex;align-items:center;gap:6px;padding:6px 16px;cursor:pointer;transition:background 0.12s}
+.tree-dir-header:hover{background:#f5f5f5}
+.tree-arrow{width:14px;color:#999;font-size:11px;transition:transform 0.2s;display:inline-block}
+.tree-arrow.open{transform:rotate(90deg)}
+.dir-icon{color:#faad14;font-size:14px}
+.dir-name{flex:1;font-size:13px;color:#1a1a1a}
+.dir-count{font-size:11px;color:#999;padding:0 4px}
+.tree-files{padding-left:8px}
+.tree-file{display:flex;align-items:center;gap:6px;padding:5px 16px 5px 32px;cursor:pointer;border-radius:0;transition:background 0.12s;position:relative}
+.tree-file:hover{background:#f0f6ff}
+.tree-file.selected{background:#e6f4ff}
+.file-type-badge{font-size:10px;padding:1px 4px;border-radius:3px;font-weight:500;flex-shrink:0}
+.badge-pdf{background:#fff1f0;color:#cf1322;border:0.5px solid #ffa39e}
+.badge-xlsx{background:#f6ffed;color:#389e0d;border:0.5px solid #b7eb8f}
+.badge-word{background:#e6f4ff;color:#096dd9;border:0.5px solid #91d5ff}
+.file-name{flex:1;font-size:12px;color:#262626;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-status{width:14px;height:14px;flex-shrink:0}
+.status-built{color:#52c41a;font-size:12px}
+.status-unbuilt{color:#d9d9d9;font-size:12px}
+/* Content area */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f0f2f5}
+/* Stats bar */
+.stats-bar{background:#fff;border-bottom:0.5px solid #e0e0e0;padding:8px 20px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.stat-chip{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:16px;font-size:12px;cursor:pointer;border:0.5px solid #e0e0e0;color:#595959;background:#fff;transition:all 0.15s}
+.stat-chip:hover{border-color:#1677ff;color:#1677ff}
+.stat-chip.active{background:#e6f4ff;border-color:#91caff;color:#1677ff}
+.stat-chip .count{font-weight:500}
+/* Doc view */
+.doc-view{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.doc-header{background:#fff;border-bottom:0.5px solid #e0e0e0;padding:12px 20px;flex-shrink:0}
+.doc-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.doc-title{font-size:15px;font-weight:500;color:#1a1a1a}
+.doc-actions{display:flex;gap:6px;align-items:center}
+.doc-meta-row{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.doc-tag{font-size:11px;padding:2px 7px;border-radius:3px;font-weight:500}
+.doc-tag-pdf{background:#fff1f0;color:#cf1322;border:0.5px solid #ffa39e}
+.doc-tag-unbuilt{background:#fff;color:#8c8c8c;border:0.5px solid #d9d9d9}
+.doc-tag-built{background:#f6ffed;color:#389e0d;border:0.5px solid #b7eb8f}
+.doc-info{display:flex;align-items:center;gap:16px;font-size:12px;color:#8c8c8c}
+.doc-content-tabs{display:flex;gap:0;border-bottom:0.5px solid #e0e0e0;margin-top:8px}
+.doc-tab{padding:6px 14px;font-size:12px;cursor:pointer;color:#8c8c8c;border-bottom:2px solid transparent;margin-bottom:-1px}
+.doc-tab.active{color:#1677ff;border-bottom-color:#1677ff;font-weight:500}
+.doc-body{flex:1;overflow-y:auto;background:#f8f8f8;display:flex;flex-direction:column}
+.pdf-preview{padding:16px;display:flex;gap:16px}
+.pdf-thumbs{display:flex;flex-direction:column;gap:8px;width:100px;flex-shrink:0}
+.pdf-thumb{background:#fff;border:0.5px solid #e0e0e0;border-radius:4px;overflow:hidden;cursor:pointer;text-align:center}
+.pdf-thumb.active{border-color:#1677ff}
+.pdf-thumb-img{width:100%;height:72px;background:linear-gradient(135deg,#f0f2f5 0%,#e8eaed 100%);display:flex;align-items:center;justify-content:center;color:#bfbfbf;font-size:10px}
+.pdf-thumb-num{font-size:10px;color:#8c8c8c;padding:2px 0}
+.pdf-main{flex:1;background:#fff;border:0.5px solid #e0e0e0;border-radius:6px;padding:24px;min-height:400px}
+.pdf-content-title{font-size:16px;font-weight:500;text-align:center;margin-bottom:8px;color:#1a1a1a}
+.pdf-content-sub{font-size:12px;text-align:center;color:#8c8c8c;margin-bottom:4px}
+.pdf-content-inst{font-size:11px;text-align:center;color:#8c8c8c;margin-bottom:16px}
+.pdf-content-abs{background:#f8f8f8;border-left:3px solid #1677ff;padding:12px 14px;margin-bottom:12px;font-size:12px;line-height:1.7;color:#434343}
+.pdf-content-label{font-size:11px;color:#8c8c8c;font-weight:500;margin-bottom:4px}
+.pdf-content-body{font-size:12px;line-height:1.8;color:#434343}
+/* Extracted content */
+.extract-content{padding:16px}
+.extract-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.extract-title{font-size:13px;font-weight:500;color:#1a1a1a}
+.extract-count{font-size:12px;color:#8c8c8c}
+.extract-body{background:#fff;border-radius:6px;border:0.5px solid #e0e0e0;padding:16px;font-size:12px;line-height:1.9;color:#434343}
+.extract-body table{width:100%;border-collapse:collapse;margin-top:8px}
+.extract-body td,th{border:0.5px solid #e0e0e0;padding:6px 10px;font-size:12px}
+.extract-body th{background:#fafafa;font-weight:500}
+/* Build modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:10px;width:460px;max-width:90vw;overflow:hidden}
+.modal-header{padding:16px 20px;border-bottom:0.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:14px;font-weight:500;color:#1a1a1a}
+.modal-close{cursor:pointer;color:#8c8c8c;font-size:18px;line-height:1}
+.modal-body{padding:20px}
+.modal-footer{padding:12px 20px;border-top:0.5px solid #f0f0f0;display:flex;justify-content:flex-end;gap:8px}
+.build-option{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:8px;border:0.5px solid #e0e0e0;cursor:pointer;margin-bottom:10px;transition:all 0.15s}
+.build-option:hover{border-color:#1677ff;background:#f0f6ff}
+.build-option.selected{border-color:#1677ff;background:#e6f4ff}
+.build-option-radio{width:16px;height:16px;border-radius:50%;border:2px solid #d9d9d9;flex-shrink:0;margin-top:1px;position:relative}
+.build-option.selected .build-option-radio{border-color:#1677ff}
+.build-option.selected .build-option-radio::after{content:'';position:absolute;top:2px;left:2px;right:2px;bottom:2px;border-radius:50%;background:#1677ff}
+.build-option-info .label{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:2px}
+.build-option-info .desc{font-size:12px;color:#8c8c8c}
+/* Progress bar */
+.build-progress{background:#f6ffed;border:0.5px solid #b7eb8f;border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.progress-title{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.progress-dot{width:8px;height:8px;border-radius:50%;background:#52c41a;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.progress-label{font-size:13px;font-weight:500;color:#1a1a1a}
+.progress-link{font-size:12px;color:#1677ff;cursor:pointer;margin-left:auto}
+.progress-bar-wrap{background:#e0e0e0;border-radius:4px;height:6px;margin-bottom:6px;overflow:hidden}
+.progress-bar-fill{height:100%;border-radius:4px;background:#52c41a;transition:width 0.5s ease}
+.progress-pct{font-size:12px;color:#52c41a;text-align:right}
+.progress-step{font-size:12px;color:#8c8c8c}
+/* KG Management */
+.kg-page{flex:1;overflow-y:auto;padding:20px}
+.kg-page-header{background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;border:0.5px solid #e0e0e0}
+.kg-page-title{font-size:15px;font-weight:500;color:#1a1a1a;margin-bottom:4px}
+.kg-page-sub{font-size:12px;color:#8c8c8c}
+.kg-header-actions{display:flex;gap:8px;margin-top:12px}
+/* Stats cards */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.stat-card{background:#fff;border-radius:8px;padding:16px;border:0.5px solid #e0e0e0;text-align:center}
+.stat-card .num{font-size:28px;font-weight:500;color:#1677ff;margin-bottom:4px}
+.stat-card .lbl{font-size:12px;color:#8c8c8c}
+/* Tag cloud */
+.tag-section{background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;border:0.5px solid #e0e0e0}
+.tag-section-title{font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
+.tag-cloud{display:flex;flex-wrap:wrap;gap:6px}
+.tag-item{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 8px;border-radius:12px;cursor:pointer;transition:all 0.15s}
+/* Node mgmt table */
+.table-section{background:#fff;border-radius:8px;padding:0;border:0.5px solid #e0e0e0;overflow:hidden;margin-bottom:16px}
+.table-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:0.5px solid #f0f0f0}
+.table-header-title{font-size:13px;font-weight:500;color:#1a1a1a}
+.table-filters{display:flex;gap:8px;align-items:center}
+.filter-select{height:28px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:12px;color:#595959;outline:none;background:#fff;cursor:pointer}
+table.data-table{width:100%;border-collapse:collapse}
+table.data-table th{background:#fafafa;font-size:12px;font-weight:500;color:#8c8c8c;padding:8px 14px;text-align:left;border-bottom:0.5px solid #f0f0f0;white-space:nowrap}
+table.data-table td{font-size:12px;color:#434343;padding:9px 14px;border-bottom:0.5px solid #f5f5f5}
+table.data-table tr:last-child td{border-bottom:none}
+table.data-table tr:hover td{background:#fafafe}
+.node-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.op-link{color:#1677ff;cursor:pointer;font-size:12px;margin-right:8px}
+.op-link:hover{text-decoration:underline}
+.op-link.danger{color:#ff4d4f}
+/* KG Visualization */
+.vis-page{flex:1;overflow:hidden;position:relative}
+.vis-toolbar{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:10;background:#fff;border-radius:20px;padding:5px 10px;border:0.5px solid #e0e0e0}
+.vis-tool-btn{padding:4px 10px;border-radius:14px;font-size:12px;cursor:pointer;color:#595959;border:none;background:transparent;transition:all 0.15s}
+.vis-tool-btn:hover{background:#f0f0f0;color:#1a1a1a}
+.vis-tool-btn.active{background:#e6f4ff;color:#1677ff}
+.vis-legend{position:absolute;right:16px;top:140px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;z-index:10}
+.vis-legend-title{font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:8px}
+.vis-legend-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;color:#595959;cursor:pointer}
+.vis-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.vis-rel-filter-item{display:flex;align-items:center;gap:4px;font-size:12px;color:#595959;cursor:pointer;white-space:nowrap}
+.vis-rel-filter-item input[type="checkbox"]{width:14px;height:14px;cursor:pointer;accent-color:#1677ff}
+.vis-rel-filter-item.disabled{color:#bfbfbf;opacity:0.6}
+.vis-svg{width:100%;height:100%}
+.vis-node{cursor:pointer;transition:opacity 0.2s}
+.vis-node:hover .node-circle{stroke-width:2.5}
+.vis-label{font-size:10px;fill:#1a1a1a;text-anchor:middle;pointer-events:none}
+.vis-edge-label{font-size:9px;fill:#8c8c8c}
+/* Tabs */
+.sub-tabs{display:flex;padding:12px 20px 0;gap:0;background:#fff;border-bottom:0.5px solid #e0e0e0}
+.sub-tab{padding:8px 16px;font-size:13px;cursor:pointer;color:#8c8c8c;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s}
+.sub-tab:hover{color:#1a1a1a}
+.sub-tab.active{color:#1677ff;border-bottom-color:#1677ff;font-weight:500}
+/* Toast */
+.toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid #b7eb8f;border-radius:8px;padding:10px 16px;font-size:13px;color:#389e0d;z-index:2000;display:flex;align-items:center;gap:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.toast.hide{display:none}
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#e0e0e0;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="switchNav('qa')">智能问答</div>
+  <div class="nav-item active kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="switchNav('kg-docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="switchNav('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="switchNav('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item" onclick="switchNav('user')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">文档目录</div>
+      <div class="sidebar-actions">
+        <button class="btn btn-success" onclick="showUpload()">↑ 上传文档</button>
+        <button class="btn btn-outline" onclick="showNewDir()">⊞ 新建目录</button>
+        <button class="btn btn-outline" onclick="">↺ 刷新</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <input class="search-input" placeholder="搜索文档（匹配标题、摘要、文件名）" />
+    </div>
+    <div class="tree-area" id="treeArea"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="mainContent">
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-chip active" onclick="filterType('all')"><span>目录</span><span class="count" id="countDir">2</span></div>
+      <div class="stat-chip" onclick="filterType('all')"><span>全部</span><span class="count" id="countAll">9</span></div>
+      <div class="stat-chip" onclick="filterType('pdf')"><span>PDF</span><span class="count" id="countPdf">6</span></div>
+      <div class="stat-chip" onclick="filterType('word')"><span>Word</span><span class="count" id="countWord">1</span></div>
+      <div class="stat-chip" onclick="filterType('excel')"><span>Excel</span><span class="count" id="countExcel">2</span></div>
+      <div class="stat-chip" onclick="filterBuilt('built')"><span>✓ 已构建</span><span class="count" id="countBuilt">3</span></div>
+      <div class="stat-chip" onclick="filterBuilt('unbuilt')"><span>✗ 未构建</span><span class="count" id="countUnbuilt">6</span></div>
+    </div>
+    <!-- Doc View placeholder -->
+    <div id="docView" class="doc-view">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#bfbfbf;flex-direction:column;gap:12px">
+        <div style="font-size:40px">📂</div>
+        <div style="font-size:14px">请从左侧目录选择文档</div>
+      </div>
+    </div>
+    <!-- KG Management Page -->
+    <div id="kgManagePage" class="hidden" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div class="sub-tabs" id="kgSubTabs" style="display:none">
+        <div class="sub-tab active" id="tab-overview" onclick="switchKgTab('overview')">图谱概览</div>
+      </div>
+      <div class="kg-page" id="kgPageContent"></div>
+    </div>
+    <!-- KG Visualization Page -->
+    <div id="kgVisPage" class="hidden" style="flex:1;overflow:hidden;position:relative;background:#f8f9fc">
+      <!-- 标题栏 -->
+      <div style="position:absolute;top:0;left:0;right:0;height:48px;background:#fff;border-bottom:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:15">
+        <div style="font-size:15px;font-weight:500;color:#1a1a1a">金融监管知识图谱可视化</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary" style="font-size:12px;padding:5px 14px" onclick="renderVis()">↺ 刷新图谱</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:5px 14px" onclick="resetVisLayout()">⟲ 重置布局</button>
+          <button class="btn btn-outline" style="font-size:12px;padding:5px 14px" onclick="showPage('docs');currentTab='kg';renderDocView();setTimeout(()=>renderDocKg(),80)">← 返回</button>
+        </div>
+      </div>
+      <!-- 关系类型过滤 -->
+      <div style="position:absolute;top:48px;left:0;right:0;background:#fff;border-bottom:0.5px solid #e0e0e0;padding:10px 20px;z-index:14;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <span style="font-size:12px;color:#8c8c8c;white-space:nowrap;margin-top:2px">关系类型过滤:</span>
+        <div id="visRelFilter" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"></div>
+      </div>
+      <!-- 工具栏 -->
+      <div class="vis-toolbar" style="top:96px;flex-wrap:wrap;max-width:90%;justify-content:flex-start">
+        <button class="vis-tool-btn active" onclick="switchVisMode('all',this)">全图</button>
+        <button class="vis-tool-btn" onclick="switchVisMode('doc',this)">按文档</button>
+        <button class="vis-tool-btn" onclick="switchVisMode('type',this)">按类型</button>
+        <button class="vis-tool-btn" onclick="switchVisMode('rel',this)">按关系</button>
+        <button class="vis-tool-btn" onclick="if(simRef)simRef.stop()">暂停</button>
+        <div style="width:1px;height:20px;background:#e0e0e0;margin:0 6px"></div>
+        <!-- 布局设置 -->
+        <select id="visLayoutSelect" onchange="changeVisLayout(this.value)" style="height:26px;border:0.5px solid #d9d9d9;border-radius:14px;padding:0 10px;font-size:12px;color:#595959;background:#fff;cursor:pointer;outline:none">
+          <option value="force">力导向布局</option>
+          <option value="circular">圆形布局</option>
+          <option value="radial">辐射布局</option>
+        </select>
+        <!-- 显示数量 -->
+        <select id="visLimitSelect" onchange="changeVisLimit(this.value)" style="height:26px;border:0.5px solid #d9d9d9;border-radius:14px;padding:0 10px;font-size:12px;color:#595959;background:#fff;cursor:pointer;outline:none">
+          <option value="50">显示50条</option>
+          <option value="100" selected>显示100条</option>
+          <option value="200">显示200条</option>
+          <option value="500">显示500条</option>
+          <option value="all">显示全部</option>
+        </select>
+        <!-- 搜索节点 -->
+        <div style="display:flex;align-items:center;gap:4px;background:#f5f5f5;border-radius:14px;padding:0 10px;height:26px">
+          <span style="font-size:12px;color:#8c8c8c">🔍</span>
+          <input id="visSearchInput" type="text" placeholder="搜索节点" onkeydown="if(event.key==='Enter')searchVisNode()" style="border:none;background:transparent;outline:none;font-size:12px;color:#595959;width:80px">
+          <select id="visDepthSelect" onchange="searchVisNode()" style="border:none;background:transparent;outline:none;font-size:11px;color:#8c8c8c;cursor:pointer;padding:0">
+            <option value="1">1级</option>
+            <option value="2" selected>2级</option>
+            <option value="3">3级</option>
+          </select>
+        </div>
+        <button id="visSearchBtn" class="vis-tool-btn" onclick="searchVisNode()" style="background:#e6f4ff;color:#1677ff">查找</button>
+      </div>
+      <div id="kgLegend" class="vis-legend" style="top:136px"></div>
+      <div id="visNodePanel" style="display:none;position:absolute;right:16px;top:136px;width:210px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:14px;z-index:20">
+        <div style="font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:10px">节点详情</div>
+        <div id="visNodeContent"></div>
+        <button onclick="closeVisNodeInfo()" style="margin-top:10px;width:100%;border:0.5px solid #d9d9d9;background:#fff;border-radius:5px;padding:4px;font-size:12px;cursor:pointer;color:#595959">关闭</button>
+      </div>
+      <svg id="visSvg" class="vis-svg" style="width:100%;height:calc(100% - 96px);margin-top:96px"></svg>
+    </div>
+
+    <!-- QA Page -->
+    <div id="qaPage" class="hidden" style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+      <div style="display:flex;flex:1;overflow:hidden">
+        <!-- Left: Sessions -->
+        <div style="width:240px;background:#fff;border-right:0.5px solid #e0e0e0;display:flex;flex-direction:column">
+          <div style="padding:12px 16px;border-bottom:0.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;font-weight:500;color:#1a1a1a">会话列表</span>
+            <button onclick="qaCreateSession()" style="width:24px;height:24px;border-radius:50%;background:#1677ff;color:#fff;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">+</button>
+          </div>
+          <div id="qaSessionList" style="flex:1;overflow-y:auto;padding:8px"></div>
+        </div>
+        <!-- Center: Chat -->
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0;background:#fff">
+          <div style="padding:12px 20px;border-bottom:0.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between">
+            <span id="qaChatTitle" style="font-size:14px;font-weight:500;color:#1a1a1a">新会话</span>
+            <div style="display:flex;gap:8px">
+              <button onclick="qaClearSession()" class="btn btn-outline" style="font-size:12px;padding:5px 12px">🗑 清空</button>
+              <button onclick="qaExportSession()" class="btn btn-primary" style="font-size:12px;padding:5px 12px">📥 导出</button>
+            </div>
+          </div>
+          <div id="qaMessages" style="flex:1;overflow-y:auto;padding:20px">
+            <div id="qaWelcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center">
+              <div style="width:56px;height:56px;border-radius:50%;background:#e6f4ff;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px">🤖</div>
+              <div style="font-size:18px;font-weight:500;color:#1a1a1a;margin-bottom:8px">欢迎使用金融监管智能问答系统</div>
+              <div style="font-size:14px;color:#8c8c8c;margin-bottom:24px;max-width:400px;line-height:1.6">基于知识图谱和大语言模型，为您提供专业的金融监管知识问答服务</div>
+              <div style="width:100%;max-width:500px;display:flex;flex-direction:column;gap:8px;text-align:left">
+                <div onclick="qaAsk('商业银行资本充足率的要求是什么？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+                  <span style="font-size:16px">🏦</span>
+                  <span style="font-size:14px;color:#1a1a1a">商业银行资本充足率的要求是什么？</span>
+                </div>
+                <div onclick="qaAsk('流动性风险监管指标有哪些？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+                  <span style="font-size:16px">📊</span>
+                  <span style="font-size:14px;color:#1a1a1a">流动性风险监管指标有哪些？</span>
+                </div>
+                <div onclick="qaAsk('反洗钱合规要求是什么？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+                  <span style="font-size:16px">🔒</span>
+                  <span style="font-size:14px;color:#1a1a1a">反洗钱合规要求是什么？</span>
+                </div>
+                <div onclick="qaAsk('系统重要性银行的附加监管要求？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+                  <span style="font-size:16px">⭐</span>
+                  <span style="font-size:14px;color:#1a1a1a">系统重要性银行的附加监管要求？</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px 20px;border-top:0.5px solid #f0f0f0">
+            <div style="display:flex;gap:10px;align-items:flex-end">
+              <textarea id="qaInput" style="flex:1;min-height:50px;max-height:100px;border:0.5px solid #d9d9d9;border-radius:8px;padding:10px 12px;font-size:13px;resize:none;outline:none;font-family:inherit;line-height:1.5" placeholder="请输入您的问题..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();qaSend()}"></textarea>
+              <button id="qaSendBtn" onclick="qaSend()" style="height:50px;padding:0 18px;background:#1677ff;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer">发送</button>
+            </div>
+          </div>
+        </div>
+        <!-- Right: Retrieval Panel (hidden initially, shown after search) -->
+        <div id="qaRetrievalPanel" style="width:300px;background:#fff;border-left:0.5px solid #e0e0e0;display:none;flex-direction:column;overflow:hidden">
+          <div style="padding:12px 16px;border-bottom:0.5px solid #f0f0f0;flex-shrink:0">
+            <span style="font-size:13px;font-weight:500;color:#1a1a1a">🔍 检索结果</span>
+          </div>
+          <!-- 关键词区域 -->
+          <div id="qaKeywordsSection" style="padding:12px 16px;border-bottom:0.5px solid #f0f0f0;flex-shrink:0">
+            <div style="font-size:11px;color:#8c8c8c;margin-bottom:8px">关键词</div>
+            <div id="qaKeywordsList" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          </div>
+          <!-- 实体区域 -->
+          <div id="qaEntitiesSection" style="padding:12px 16px;border-bottom:0.5px solid #f0f0f0;flex-shrink:0">
+            <div style="font-size:11px;color:#8c8c8c;margin-bottom:8px">相关实体</div>
+            <div id="qaEntitiesList" style="display:flex;flex-wrap:wrap;gap:5px"></div>
+          </div>
+          <!-- 图谱可视化区域 -->
+          <div style="flex:1;overflow:hidden;position:relative;background:#f8f9fc;display:flex;flex-direction:column;min-height:160px">
+            <div style="padding:8px 12px;font-size:11px;color:#8c8c8c;border-bottom:0.5px solid #f0f0f0;flex-shrink:0">知识图谱</div>
+            <svg id="qaKgVizSvg" style="flex:1;width:100%;min-height:120px"></svg>
+            <div id="qaKgFullscreenBtn" style="display:none;position:absolute;top:32px;right:8px;width:28px;height:28px;border-radius:5px;background:rgba(255,255,255,0.95);border:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#666" onclick="qaOpenFullscreen()">⛶</div>
+          </div>
+          <!-- 图谱上下文区域 -->
+          <div id="qaKgContext" style="display:none;border-top:0.5px solid #f0f0f0;max-height:140px;overflow-y:auto;padding:12px;flex-shrink:0">
+            <div style="font-size:11px;font-weight:500;color:#1a1a1a;margin-bottom:8px">📋 图谱上下文</div>
+            <div id="qaKgContextList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Build Modal -->
+<div class="modal-overlay hidden" id="buildModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">构建知识图谱</div>
+      <div class="modal-close" onclick="closeBuildModal()">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#8c8c8c;margin-bottom:12px">选择构建范围：</div>
+      <div class="build-option selected" id="build-single" onclick="selectBuildOpt('single')">
+        <div class="build-option-radio" id="radio-single"></div>
+        <div class="build-option-info">
+          <div class="label">构建当前文档</div>
+          <div class="desc" id="buildDocName">仅对当前选中文档构建知识图谱</div>
+        </div>
+      </div>
+      <div class="build-option" id="build-dir" onclick="selectBuildOpt('dir')">
+        <div class="build-option-radio" id="radio-dir"></div>
+        <div class="build-option-info">
+          <div class="label">按目录构建</div>
+          <div class="desc">对当前目录下所有文档批量构建知识图谱</div>
+        </div>
+      </div>
+      <div class="build-option" id="build-all" onclick="selectBuildOpt('all')">
+        <div class="build-option-radio" id="radio-all"></div>
+        <div class="build-option-info">
+          <div class="label">全量构建</div>
+          <div class="desc">对所有未构建文档进行全量构建</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBuildModal()">取消</button>
+      <button class="btn btn-primary" onclick="startBuild()">开始构建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay hidden" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">上传文档</div>
+      <div class="modal-close" onclick="document.getElementById('uploadModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="border:1.5px dashed #d9d9d9;border-radius:8px;padding:32px;text-align:center;color:#8c8c8c;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#1677ff'" onmouseout="this.style.borderColor='#d9d9d9'">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px">点击或拖拽文件到此区域上传</div>
+        <div style="font-size:12px">支持 PDF、Word、Excel、TXT 格式，单文件不超过 50MB</div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">上传目录：</div>
+        <select class="filter-select" style="width:100%;height:32px" id="uploadDirSelect">
+          <option value="1">目录1 - 监管法规</option>
+          <option value="2">目录2 - 行业报告</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('uploadModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="document.getElementById('uploadModal').classList.add('hidden');showToast('文档上传成功')">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- NewDir Modal -->
+<div class="modal-overlay hidden" id="newDirModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <div class="modal-title">新建目录</div>
+      <div class="modal-close" onclick="document.getElementById('newDirModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">目录名称</div>
+      <input style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入目录名称" id="newDirInput" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('newDirModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="createDir()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- RenameDir Modal -->
+<div class="modal-overlay hidden" id="renameDirModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <div class="modal-title">重命名目录</div>
+      <div class="modal-close" onclick="document.getElementById('renameDirModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="renameDirId" />
+      <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">目录名称</div>
+      <input style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入目录名称" id="renameDirInput" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('renameDirModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doRenameDir()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Node Modal -->
+<div class="modal-overlay hidden" id="editNodeModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <div class="modal-title">编辑节点</div>
+      <div class="modal-close" onclick="document.getElementById('editNodeModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editNodeId" />
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">节点名称</div>
+        <input id="editNodeName" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none;background:#f5f5f5;color:#8c8c8c" readonly />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">节点类型</div>
+        <input id="editNodeType" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none;background:#f5f5f5;color:#8c8c8c" readonly />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">节点描述</div>
+        <textarea id="editNodeDesc" style="width:100%;height:80px;border:0.5px solid #d9d9d9;border-radius:5px;padding:8px 10px;font-size:13px;outline:none;resize:none" placeholder="请输入节点描述"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('editNodeModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doEditNode()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Triple Modal -->
+<div class="modal-overlay hidden" id="addTripleModal">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <div class="modal-title">新增三元组</div>
+      <div class="modal-close" onclick="document.getElementById('addTripleModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">头实体名称</div>
+        <input id="addTripleHeadName" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入头实体名称" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">头实体类型</div>
+        <select id="addTripleHeadType" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择类型</option>
+          ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">关系类型</div>
+        <select id="addTripleRel" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择关系</option>
+          <option>监管</option><option>颁布</option><option>遵循</option><option>制定</option><option>评估</option>
+          <option>包含</option><option>申请</option><option>产生</option><option>面临</option><option>影响</option>
+          <option>需满足</option><option>计算方式</option><option>指标</option><option>关联</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">尾实体名称</div>
+        <input id="addTripleTailName" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入尾实体名称" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">尾实体类型</div>
+        <select id="addTripleTailType" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择类型</option>
+          ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('addTripleModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doAddTriple()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Triple Modal -->
+<div class="modal-overlay hidden" id="editTripleModal">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <div class="modal-title">编辑三元组</div>
+      <div class="modal-close" onclick="document.getElementById('editTripleModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTripleIdx" />
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">头实体名称</div>
+        <input id="editTripleHeadName" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入头实体名称" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">头实体类型</div>
+        <select id="editTripleHeadType" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择类型</option>
+          ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">关系类型</div>
+        <select id="editTripleRel" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择关系</option>
+          <option>监管</option><option>颁布</option><option>遵循</option><option>制定</option><option>评估</option>
+          <option>包含</option><option>申请</option><option>产生</option><option>面临</option><option>影响</option>
+          <option>需满足</option><option>计算方式</option><option>指标</option><option>关联</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">尾实体名称</div>
+        <input id="editTripleTailName" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none" placeholder="请输入尾实体名称" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">尾实体类型</div>
+        <select id="editTripleTailType" style="width:100%;height:32px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 8px;font-size:13px;outline:none;background:#fff;cursor:pointer">
+          <option value="">选择类型</option>
+          ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('editTripleModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doEditTriple()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script>
+// ---- Data ----
+const nodeColors = {
+  '监管机构':'#1677ff','法规文件':'#f5222d','金融机构':'#52c41a','监管指标':'#fa8c16',
+  '风险类别':'#722ed1','处罚事项':'#eb2f96','报告要求':'#13c2c2','合规要求':'#fadb14',
+  '监管政策':'#2f54eb','市场主体':'#fa541c'
+};
+
+const docs = [
+  {id:1,dir:1,name:'商业银行资本充足率监管规定',type:'pdf',built:true,size:'2.34 MB',chars:12580,uploader:'admin',date:'2026-05-10 09:30',
+   abstract:'本规定依据《商业银行法》及相关法规，对商业银行资本充足率计算方法、最低要求、监控报告等作出详细规定，旨在强化资本约束，防范系统性金融风险。'},
+  {id:2,dir:1,name:'银行业监督管理条例',type:'pdf',built:true,size:'1.87 MB',chars:9430,uploader:'admin',date:'2026-05-10 09:45',
+   abstract:'本条例规范银行业金融机构的设立、变更、终止及业务范围，明确银行业监督管理机构的职责权限，强化审慎监管要求。'},
+  {id:3,dir:1,name:'证券公司风险控制指标管理办法',type:'pdf',built:false,size:'1.56 MB',chars:8920,uploader:'admin',date:'2026-05-11 14:20',
+   abstract:'本办法规定证券公司应当持续符合净资本、净资产与负债等各项风险控制指标要求，建立健全风险控制指标监控体系。'},
+  {id:4,dir:1,name:'金融机构报告指标体系',type:'xlsx',built:false,size:'186 KB',chars:3240,uploader:'admin',date:'2026-05-11 14:35',
+   abstract:''},
+  {id:5,dir:1,name:'系统重要性银行评估办法',type:'word',built:true,size:'892 KB',chars:6780,uploader:'admin',date:'2026-05-12 08:00',
+   abstract:'本办法对系统重要性银行的评估方法、附加监管要求及恢复处置计划进行了规定，以强化对系统重要性银行的审慎监管。'},
+  {id:6,dir:2,name:'反洗钱监管要求与客户尽职调查',type:'pdf',built:false,size:'1.23 MB',chars:7650,uploader:'admin',date:'2026-05-12 09:10',
+   abstract:'本文件梳理金融机构反洗钱义务、客户尽职调查程序、可疑交易报告要求，及违规处罚依据。'},
+  {id:7,dir:2,name:'保险公司偿付能力监管规则',type:'pdf',built:false,size:'2.01 MB',chars:11200,uploader:'admin',date:'2026-05-12 09:25',
+   abstract:''},
+  {id:8,dir:2,name:'金融控股公司监督管理试行办法',type:'pdf',built:false,size:'1.44 MB',chars:8930,uploader:'admin',date:'2026-05-12 09:40',
+   abstract:''},
+  {id:9,dir:2,name:'监管数据汇总2026Q1',type:'xlsx',built:false,size:'412 KB',chars:5610,uploader:'admin',date:'2026-05-12 10:00',
+   abstract:''}
+];
+
+const dirs = [
+  {id:1,name:'目录1 - 监管法规',open:true},
+  {id:2,name:'目录2 - 行业报告',open:false}
+];
+
+let currentDoc = null;
+let currentTab = 'original';
+let buildOpt = 'single';
+let kgTab = 'overview';
+let kgSubTab = 'nodes'; // 节点管理列表 | 三元组管理 二级tab
+let currentPage = 'docs'; // docs | kgManage | kgVis
+
+// ---- Render Tree ----
+function renderTree(){
+  const area = document.getElementById('treeArea');
+  area.innerHTML = '';
+  dirs.forEach(dir => {
+    const dirDocs = docs.filter(d=>d.dir===dir.id);
+    const dirEl = document.createElement('div');
+    dirEl.className='tree-dir';
+    dirEl.innerHTML=`
+      <div class="tree-dir-header" onclick="toggleDir(${dir.id})">
+        <span class="tree-arrow ${dir.open?'open':''}" id="arr-${dir.id}">▶</span>
+        <span class="dir-icon">📁</span>
+        <span class="dir-name" id="dir-name-${dir.id}">${dir.name}</span>
+        <span class="dir-count">(${dirDocs.length})</span>
+        <span class="dir-actions" style="display:none;gap:4px;align-items:center" id="dir-actions-${dir.id}">
+          <span style="font-size:11px;color:#1677ff;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();showUploadToDir(${dir.id})" title="上传文档">↑</span>
+          <span style="font-size:11px;color:#fa8c16;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();showRenameDir(${dir.id})" title="重命名">✎</span>
+          <span style="font-size:11px;color:#ff4d4f;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();deleteDir(${dir.id})" title="删除目录">🗑</span>
+        </span>
+        <span style="font-size:11px;color:#bfbfbf;cursor:pointer;padding:0 4px" onclick="event.stopPropagation();showBuildDir(${dir.id})">⚙</span>
+      </div>
+      <div class="tree-files" id="dir-files-${dir.id}" style="${dir.open?'':'display:none'}">
+        ${dirDocs.map(d=>`
+          <div class="tree-file ${currentDoc&&currentDoc.id===d.id?'selected':''}" id="file-${d.id}" onclick="selectDoc(${d.id})">
+            <span class="file-type-badge badge-${d.type==='pdf'?'pdf':d.type==='xlsx'?'xlsx':'word'}">${d.type.toUpperCase()}</span>
+            <span class="file-name">${d.name}</span>
+            <span class="${d.built?'status-built':'status-unbuilt'}" title="${d.built?'已构建图谱':'未构建图谱'}">${d.built?'●':'○'}</span>
+          </div>`).join('')}
+      </div>`;
+    // hover show actions
+    const header=dirEl.querySelector('.tree-dir-header');
+    const actions=dirEl.querySelector('.dir-actions');
+    header.addEventListener('mouseenter',()=>{if(actions)actions.style.display='flex';});
+    header.addEventListener('mouseleave',()=>{if(actions)actions.style.display='none';});
+    area.appendChild(dirEl);
+  });
+}
+
+function toggleDir(id){
+  const dir=dirs.find(d=>d.id===id);
+  dir.open=!dir.open;
+  document.getElementById('dir-files-'+id).style.display=dir.open?'':'none';
+  document.getElementById('arr-'+id).className='tree-arrow'+(dir.open?' open':'');
+}
+
+// ---- Select Doc ----
+function selectDoc(id){
+  currentDoc=docs.find(d=>d.id===id);
+  currentTab='original';
+  showPage('docs');
+  renderDocView();
+  renderTree();
+}
+
+function renderDocView(){
+  const v=document.getElementById('docView');
+  if(!currentDoc){v.innerHTML='<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#bfbfbf;flex-direction:column;gap:12px"><div style="font-size:40px">📂</div><div style="font-size:14px">请从左侧目录选择文档</div></div>';return;}
+  const d=currentDoc;
+  const typeClass=d.type==='pdf'?'doc-tag-pdf':d.type==='xlsx'?'doc-tag-pdf':'doc-tag-pdf';
+  const builtTag=d.built?'<span class="doc-tag doc-tag-built">已构建图谱</span>':'<span class="doc-tag doc-tag-unbuilt">未构建图谱</span>';
+  v.innerHTML=`
+    <div class="doc-header">
+      <div class="doc-title-row">
+        <div class="doc-title">${d.name}</div>
+        <div class="doc-actions">
+          <button class="btn btn-success" onclick="openBuildModal()" style="font-size:12px">⚡ 构建知识图谱</button>
+          <button class="btn btn-outline" style="font-size:12px">✎ 编辑</button>
+          <button class="btn btn-outline" style="font-size:12px">↓ 下载</button>
+          <button class="btn btn-outline" style="font-size:12px">⛶ 全屏</button>
+          <button class="btn btn-danger" style="font-size:12px" onclick="deleteDoc()">删除</button>
+          <span style="cursor:pointer;color:#8c8c8c;font-size:18px;margin-left:4px" onclick="currentDoc=null;renderDocView();renderTree()">×</span>
+        </div>
+      </div>
+      <div class="doc-meta-row">
+        <span class="doc-tag" style="background:${d.type==='pdf'?'#fff1f0':d.type==='xlsx'?'#f6ffed':'#e6f4ff'};color:${d.type==='pdf'?'#cf1322':d.type==='xlsx'?'#389e0d':'#096dd9'};border:0.5px solid ${d.type==='pdf'?'#ffa39e':d.type==='xlsx'?'#b7eb8f':'#91d5ff'}">${d.type.toUpperCase()}</span>
+        ${builtTag}
+      </div>
+      <div class="doc-info">
+        <span>文件名：${d.name}.${d.type}</span>
+        <span>文件大小：${d.size}</span>
+        <span>上传者：${d.uploader}</span>
+        <span>上传时间：${d.date}</span>
+        <span>提取字数：${d.chars.toLocaleString()} 字</span>
+      </div>
+      <div class="doc-content-tabs">
+        <div class="doc-tab ${currentTab==='original'?'active':''}" onclick="switchDocTab('original')">原文档</div>
+        <div class="doc-tab ${currentTab==='extract'?'active':''}" onclick="switchDocTab('extract')">提取内容</div>
+        ${d.built?`<div class="doc-tab ${currentTab==='kg'?'active':''}" onclick="switchDocTab('kg')">知识图谱</div>`:''}
+      </div>
+    </div>
+    <div class="doc-body" id="docBody" style="${currentTab==='kg'?'overflow:hidden;flex:1':'overflow-y:auto'}">${renderDocBody()}</div>`;
+}
+
+function switchDocTab(tab){
+  currentTab=tab;
+  renderDocView();
+  if(tab==='kg') setTimeout(()=>renderDocKg(),80);
+}
+
+function renderDocBody(){
+  const d=currentDoc;
+  if(currentTab==='original'){
+    if(d.type==='xlsx'){
+      return `<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;padding:60px;color:#8c8c8c">
+        <div style="width:56px;height:56px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:24px">ℹ</div>
+        <div style="font-size:14px;font-weight:500;color:#1a1a1a">不支持的文件类型</div>
+        <div style="font-size:12px;text-align:center">该文件类型暂不支持在线预览。<br>您可以下载文档后查看。</div>
+        <button class="btn btn-primary" style="margin-top:8px">↓ 下载文档</button>
+      </div>`;
+    }
+    return `<div class="pdf-preview">
+      <div class="pdf-thumbs">
+        ${[1,2,3,4,5].map(n=>`<div class="pdf-thumb ${n===1?'active':''}"><div class="pdf-thumb-img">第${n}页</div><div class="pdf-thumb-num">${n}</div></div>`).join('')}
+      </div>
+      <div class="pdf-main">
+        <div class="pdf-content-title">${d.name}</div>
+        ${d.abstract?`
+        <div style="margin-bottom:16px">
+          <div class="pdf-content-label">文档摘要</div>
+          <div class="pdf-content-abs">${d.abstract}</div>
+        </div>`:''}
+        <div class="pdf-content-label">正文节选</div>
+        <div class="pdf-content-body">
+          本文件依据相关监管法规，对金融机构的合规要求、风险管控措施、信息披露义务进行了系统性规定。
+          <br><br>
+          第一章 总则<br>
+          第一条 为规范金融机构经营行为，防范金融风险，维护金融稳定，依据《中华人民共和国银行业监督管理法》、《中华人民共和国商业银行法》等法律法规，制定本规定。<br>
+          <br>
+          第二条 本规定适用于在中华人民共和国境内设立的商业银行、政策性银行及其在境内外的分支机构。
+        </div>
+      </div>
+    </div>`;
+  }
+  if(currentTab==='extract'){
+    if(d.type==='xlsx'){
+      return `<div class="extract-content">
+        <div class="extract-header">
+          <div class="extract-title">文档内容</div>
+          <div class="extract-count">共 ${d.chars.toLocaleString()} 字</div>
+        </div>
+        <div class="extract-body">
+          <p>=== Sheet: Sheet1 ===</p>
+          <p style="margin-top:8px">金融机构监管指标体系 | 指标类别 | 计算公式 | 监管要求 | 备注</p>
+          <p>-----------------------------------</p>
+          <table>
+            <tr><th>指标名称</th><th>指标类别</th><th>计算公式</th><th>监管要求</th><th>适用机构</th></tr>
+            <tr><td>资本充足率</td><td>资本类</td><td>资本净额/风险加权资产</td><td>≥10.5%</td><td>商业银行</td></tr>
+            <tr><td>核心一级资本充足率</td><td>资本类</td><td>核心一级资本/风险加权资产</td><td>≥7.5%</td><td>商业银行</td></tr>
+            <tr><td>流动性覆盖率</td><td>流动性</td><td>优质流动性资产/未来30天净现金流出</td><td>≥100%</td><td>商业银行</td></tr>
+            <tr><td>净稳定资金比例</td><td>流动性</td><td>可用稳定资金/所需稳定资金</td><td>≥100%</td><td>商业银行</td></tr>
+            <tr><td>不良贷款率</td><td>资产质量</td><td>不良贷款余额/贷款余额</td><td>≤5%</td><td>商业银行</td></tr>
+            <tr><td>净资产负债率</td><td>风险控制</td><td>净资产/负债</td><td>≥20%</td><td>证券公司</td></tr>
+          </table>
+        </div>
+      </div>`;
+    }
+    return `<div class="extract-content">
+      <div class="extract-header">
+        <div class="extract-title">文档内容</div>
+        <div class="extract-count">共 ${d.chars.toLocaleString()} 字</div>
+      </div>
+      <div class="extract-body">
+        <p><strong>${d.name}</strong></p>
+        <p style="margin-top:8px;color:#8c8c8c">提取时间：${d.date} &nbsp;|&nbsp; 提取字数：${d.chars.toLocaleString()} 字</p>
+        ${d.abstract?`<p style="margin-top:12px;background:#f8f8f8;padding:10px;border-radius:6px;line-height:1.8">${d.abstract}</p>`:''}
+        <p style="margin-top:12px;line-height:1.9">
+          第一章 总则<br>
+          第一条 为规范金融监管工作，保护金融消费者合法权益，防范和化解金融风险，维护金融稳定，根据相关法律法规，制定本规定。<br><br>
+          第二条 本规定所称监管指标，是指用于衡量金融机构稳健经营状况、流动性风险、信用风险、操作风险等各类风险的定量标准。金融监管机构依据本规定对金融机构实施持续性监测与评估。<br><br>
+          第三条 金融机构应当按照本规定要求，建立健全内部风险控制体系，确保各项监管指标持续达标，并按规定向监管部门报告。
+        </p>
+      </div>
+    </div>`;
+  }
+  if(currentTab==='kg'){
+    return `<div style="height:100%;display:flex;flex-direction:column;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:0.5px solid #f0f0f0;flex-shrink:0;background:#fff">
+        <div style="font-size:13px;font-weight:500;color:#1a1a1a">知识图谱 — ${d.name}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span style="font-size:12px;color:#8c8c8c">节点：<b id="kgNodeCount">-</b>&nbsp; 关系：<b id="kgEdgeCount">-</b></span>
+          <button class="btn btn-outline" style="font-size:12px" onclick="showPage('kgVis');renderVis()">⛶ 全屏查看</button>
+        </div>
+      </div>
+      <div style="flex:1;position:relative;overflow:hidden;background:#f8f9fc" id="kgContainer">
+        <svg id="docKgSvg" style="width:100%;height:100%;cursor:grab"></svg>
+        <div id="nodeInfoPanel" style="display:none;position:absolute;right:12px;top:12px;width:200px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:14px;z-index:20">
+          <div style="font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:10px">节点详情</div>
+          <div id="nodeInfoContent"></div>
+          <button onclick="closeNodeInfo()" style="margin-top:10px;width:100%;border:0.5px solid #d9d9d9;background:#fff;border-radius:5px;padding:4px;font-size:12px;cursor:pointer;color:#595959">关闭</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+// ---- Build Modal ----
+function openBuildModal(){
+  if(currentDoc){
+    document.getElementById('buildDocName').textContent='当前文档：'+currentDoc.name;
+  }
+  document.getElementById('buildModal').classList.remove('hidden');
+}
+function closeBuildModal(){document.getElementById('buildModal').classList.add('hidden')}
+function selectBuildOpt(opt){
+  buildOpt=opt;
+  ['single','dir','all'].forEach(o=>{
+    document.getElementById('build-'+o).className='build-option'+(o===opt?' selected':'');
+  });
+}
+function startBuild(){
+  closeBuildModal();
+  showBuildProgress();
+}
+
+// ---- Build Progress ----
+function showBuildProgress(){
+  const bar=document.getElementById('statsBar');
+  bar.innerHTML=`<div class="build-progress" style="flex:1">
+    <div class="progress-title">
+      <div class="progress-dot"></div>
+      <div class="progress-label">正在构建知识图谱</div>
+      <div class="progress-link" onclick="hideBuildProgress()">查看详情</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progFill" style="width:5%"></div></div>
+    <div style="display:flex;justify-content:space-between">
+      <div class="progress-step" id="progStep">正在提取实体...</div>
+      <div class="progress-pct" id="progPct">5%</div>
+    </div>
+  </div>`;
+  const steps=[
+    {pct:15,label:'正在分析文档结构...'},
+    {pct:30,label:'识别金融实体...'},
+    {pct:50,label:'抽取三元组关系...'},
+    {pct:70,label:'构建本体映射...'},
+    {pct:85,label:'创建约束和索引...'},
+    {pct:95,label:'写入图数据库...'},
+    {pct:100,label:'构建完成！'}
+  ];
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>=steps.length){
+      clearInterval(iv);
+      if(currentDoc)currentDoc.built=true;
+      renderTree();
+      setTimeout(()=>{
+        restoreStatsBar();
+        renderDocView();
+        showToast('构建完成！处理 1 个文档，提取 45 个三元组，创建 22 个节点，23 个关系');
+      },500);
+      return;
+    }
+    const s=steps[i++];
+    document.getElementById('progFill').style.width=s.pct+'%';
+    document.getElementById('progPct').textContent=s.pct+'%';
+    document.getElementById('progStep').textContent=s.label;
+  },800);
+}
+function hideBuildProgress(){restoreStatsBar()}
+function restoreStatsBar(){
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-chip active"><span>目录</span><span class="count">2</span></div>
+    <div class="stat-chip"><span>全部</span><span class="count">9</span></div>
+    <div class="stat-chip"><span>PDF</span><span class="count">6</span></div>
+    <div class="stat-chip"><span>Word</span><span class="count">1</span></div>
+    <div class="stat-chip"><span>Excel</span><span class="count">2</span></div>
+    <div class="stat-chip"><span>✓ 已构建</span><span class="count" id="countBuilt">4</span></div>
+    <div class="stat-chip"><span>✗ 未构建</span><span class="count" id="countUnbuilt">5</span></div>`;
+}
+
+// ---- Page Switch ----
+function showPage(page){
+  if(simRef){simRef.stop();simRef=null;}
+  currentPage=page;
+  // 文档目录树仅在 docs 页面显示
+  document.getElementById('sidebar').style.display=(page==='docs')?'flex':'none';
+  // statsBar 仅在 docs 页面显示
+  document.getElementById('statsBar').style.display=(page!=='docs')?'none':'flex';
+  document.getElementById('docView').style.display=(page==='docs')?'flex':'none';
+  const kgManage=document.getElementById('kgManagePage');
+  kgManage.style.display=(page==='kgManage')?'flex':'none';
+  kgManage.className=(page==='kgManage')?'':'hidden';
+  const kgVisPage=document.getElementById('kgVisPage');
+  kgVisPage.className=(page==='kgVis')?'':'hidden';
+  kgVisPage.style.display=(page==='kgVis')?'flex':'none';
+  const subTabs=document.getElementById('kgSubTabs');
+  if(subTabs)subTabs.style.display=(page==='kgManage')?'flex':'none';
+  // QA Page
+  const qaPage=document.getElementById('qaPage');
+  qaPage.className=(page==='qa')?'':'hidden';
+  qaPage.style.display=(page==='qa')?'flex':'none';
+  if(page==='kgManage'){kgTab='overview';switchKgTab('overview');}
+  if(page==='kgVis'){if(Object.keys(visRelFilters).length===0)KG_EDGES.forEach(e=>visRelFilters[e.r]=true);setTimeout(renderVis,80);}
+  if(page==='qa'){qaInit();}
+}
+
+function toggleKgMenu(ev){
+  ev.stopPropagation();
+  document.getElementById('kgSubmenu').classList.toggle('show');
+}
+document.addEventListener('click',function(){document.getElementById('kgSubmenu').classList.remove('show');});
+
+function switchNav(p){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(p==='kg-docs'){
+    document.getElementById('nav-kg').classList.add('active');
+    showPage('docs');
+  } else if(p==='kg-manage'){
+    document.getElementById('nav-kg').classList.add('active');
+    showPage('kgManage');
+  } else if(p==='kg-vis'){
+    document.getElementById('nav-kg').classList.add('active');
+    showPage('kgVis');
+  } else if(p==='user'){
+    showPage('docs');
+    showToast('功能开发中，敬请期待');
+  } else if(p==='qa'){
+    // 智能问答页面
+    document.querySelector('.nav-item[onclick*="qa"]').classList.add('active');
+    showPage('qa');
+  }
+}
+
+// ---- KG Manage ----
+const nodeData=[
+  {id:1,name:'中国人民银行',type:'监管机构',rels:8,triples:12,source:'商业银行资本充足率监管规定'},
+  {id:2,name:'资本充足率',type:'监管指标',rels:5,triples:7,source:'商业银行资本充足率监管规定'},
+  {id:3,name:'商业银行',type:'金融机构',rels:11,triples:18,source:'银行业监督管理条例'},
+  {id:4,name:'流动性覆盖率',type:'监管指标',rels:4,triples:6,source:'商业银行资本充足率监管规定'},
+  {id:5,name:'巴塞尔协议III',type:'法规文件',rels:6,triples:9,source:'商业银行资本充足率监管规定'},
+  {id:6,name:'净稳定资金比例',type:'监管指标',rels:3,triples:5,source:'金融机构报告指标体系'},
+  {id:7,name:'不良贷款',type:'风险类别',rels:5,triples:8,source:'银行业监督管理条例'},
+  {id:8,name:'系统重要性银行',type:'金融机构',rels:7,triples:10,source:'系统重要性银行评估办法'},
+  {id:9,name:'附加资本要求',type:'合规要求',rels:4,triples:6,source:'系统重要性银行评估办法'},
+  {id:10,name:'中国银保监会',type:'监管机构',rels:9,triples:14,source:'银行业监督管理条例'}
+];
+const tripleData=[
+  {s:'中国人民银行',sType:'监管机构',p:'监管',o:'商业银行',oType:'金融机构',conf:0.97,source:'银行业监督管理条例'},
+  {s:'商业银行',sType:'金融机构',p:'遵循',o:'巴塞尔协议III',oType:'法规文件',conf:0.95,source:'商业银行资本充足率监管规定'},
+  {s:'资本充足率',sType:'监管指标',p:'监管要求',o:'≥10.5%',oType:'监管指标',conf:0.99,source:'商业银行资本充足率监管规定'},
+  {s:'系统重要性银行',sType:'金融机构',p:'需满足',o:'附加资本要求',oType:'合规要求',conf:0.96,source:'系统重要性银行评估办法'},
+  {s:'流动性覆盖率',sType:'监管指标',p:'计算方式',o:'优质流动资产/30天净现金流出',oType:'监管指标',conf:0.98,source:'金融机构报告指标体系'},
+  {s:'商业银行',sType:'金融机构',p:'面临',o:'不良贷款',oType:'风险类别',conf:0.92,source:'银行业监督管理条例'},
+  {s:'中国银保监会',sType:'监管机构',p:'颁布',o:'商业银行资本充足率监管规定',oType:'法规文件',conf:0.99,source:'商业银行资本充足率监管规定'},
+  {s:'净稳定资金比例',sType:'监管指标',p:'监管要求',o:'≥100%',oType:'监管指标',conf:0.98,source:'金融机构报告指标体系'},
+  {s:'不良贷款',sType:'风险类别',p:'指标',o:'不良贷款率≤5%',oType:'监管指标',conf:0.94,source:'银行业监督管理条例'},
+  {s:'中国人民银行',sType:'监管机构',p:'制定',o:'净稳定资金比例',oType:'监管指标',conf:0.95,source:'金融机构报告指标体系'}
+];
+
+function renderKgManage(){
+  const content=document.getElementById('kgPageContent');
+  if(!content)return;
+  if(kgTab==='overview'){
+    content.innerHTML=`
+      <div class="kg-page-header">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between">
+          <div>
+            <div class="kg-page-title">知识图谱管理</div>
+            <div class="kg-page-sub">管理金融监管知识图谱，同步文档数据到图数据库</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-success">⊕ 增量构建图谱</button>
+            <button class="btn btn-primary">↺ 全量重建图谱</button>
+            <button class="btn btn-danger">⊖ 清空图谱</button>
+            <button class="btn btn-outline">↺ 刷新统计</button>
+          </div>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num">128</div><div class="lbl">节点总数</div></div>
+        <div class="stat-card"><div class="num">247</div><div class="lbl">关系总数</div></div>
+        <div class="stat-card" style="cursor:pointer"><div class="num" style="font-size:22px">10/18</div><div class="lbl">节点类型数</div></div>
+        <div class="stat-card" style="cursor:pointer"><div class="num" style="font-size:22px">15/23</div><div class="lbl">关系类型数</div></div>
+      </div>
+      <div class="tag-section">
+        <div class="tag-section-title">节点类型</div>
+        <div class="tag-cloud">
+          <span class="tag-item" style="background:#1677ff22;color:#1677ff;border:0.5px solid #1677ff55"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1677ff;margin-right:4px"></span>监管机构 <span style="background:#1677ff;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">8</span></span>
+          <span class="tag-item" style="background:#f5222d22;color:#f5222d;border:0.5px solid #f5222d55"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f5222d;margin-right:4px"></span>法规文件 <span style="background:#f5222d;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">3</span></span>
+          <span class="tag-item" style="background:#52c41a22;color:#52c41a;border:0.5px solid #52c41a55"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#52c41a;margin-right:4px"></span>金融机构 <span style="background:#52c41a;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">14</span></span>
+          <span class="tag-item" style="background:#fa8c1622;color:#fa8c16;border:0.5px solid #fa8c1655"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fa8c16;margin-right:4px"></span>监管指标 <span style="background:#fa8c16;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">12</span></span>
+          <span class="tag-item" style="background:#722ed122;color:#722ed1;border:0.5px solid #722ed155"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#722ed1;margin-right:4px"></span>风险类别 <span style="background:#722ed1;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">7</span></span>
+          <span class="tag-item" style="background:#eb2f9622;color:#eb2f96;border:0.5px solid #eb2f9655"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#eb2f96;margin-right:4px"></span>处罚事项 <span style="background:#eb2f96;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">5</span></span>
+          <span class="tag-item" style="background:#13c2c222;color:#13c2c2;border:0.5px solid #13c2c255"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#13c2c2;margin-right:4px"></span>报告要求 <span style="background:#13c2c2;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">9</span></span>
+          <span class="tag-item" style="background:#fadb1422;color:#d48806;border:0.5px solid #fadb1455"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fadb14;margin-right:4px"></span>合规要求 <span style="background:#d48806;color:#fff;padding:1px 5px;border-radius:8px;font-size:10px">6</span></span>
+        </div>
+      </div>
+      <div class="tag-section">
+        <div class="tag-section-title">关系类型</div>
+        <div class="tag-cloud">
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">监管(18)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">颁布(12)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">遵循(15)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">计算方式(8)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">适用于(11)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">包含(9)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">评估(7)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">报告(13)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">制定(10)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">处罚(5)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">关联(16)</span>
+          <span class="tag-item" style="background:#f0f0f0;color:#595959;border:0.5px solid #d9d9d9">依据(9)</span>
+        </div>
+      </div>
+      <div style="background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;border:0.5px solid #e0e0e0">
+        <div class="sub-tabs" style="padding:0 0 12px">
+          <div class="sub-tab ${kgSubTab==='nodes'?'active':''}" id="kgSubTab-nodes" onclick="switchKgSubTab('nodes')">节点列表</div>
+          <div class="sub-tab ${kgSubTab==='triples'?'active':''}" id="kgSubTab-triples" onclick="switchKgSubTab('triples')">三元组列表</div>
+        </div>
+        <div id="kgManageContent"></div>
+      </div>
+    `;
+    // 渲染二级tab内容
+    setTimeout(renderKgManageContent, 0);
+  }
+}
+
+function switchKgTab(tab){
+  kgTab=tab;
+  ['overview'].forEach(t=>{
+    const el=document.getElementById('tab-'+t);
+    if(el)el.className='sub-tab'+(t===tab?' active':'');
+  });
+  if(document.getElementById('kgPageContent'))renderKgManage();
+}
+
+function switchKgSubTab(tab){
+  kgSubTab=tab;
+  ['nodes','triples'].forEach(t=>{
+    const el=document.getElementById('kgSubTab-'+t);
+    if(el)el.className='sub-tab'+(t===tab?' active':'');
+  });
+  renderKgManageContent();
+}
+
+function renderKgManageContent(){
+  const content=document.getElementById('kgManageContent');
+  if(!content)return;
+  if(kgSubTab==='nodes'){
+    content.innerHTML=`
+      <div class="table-section">
+        <div class="table-header">
+          <div class="table-header-title">节点列表</div>
+          <div class="table-filters">
+            <select class="filter-select" onchange="renderKgManage()">
+              <option value="">节点类型：全部</option>
+              ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+            </select>
+            <input class="search-input" style="width:160px;height:28px" placeholder="搜索节点名称"/>
+          </div>
+        </div>
+        <table class="data-table">
+          <tr><th>节点名称</th><th>类型</th><th>关联关系数</th><th>涉及三元组</th><th>来源文档</th><th>操作</th></tr>
+          ${nodeData.map(n=>`
+            <tr>
+              <td><span class="node-dot" style="background:${nodeColors[n.type]||'#888'}"></span>${n.name}</td>
+              <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[n.type]||'#888'}22;color:${nodeColors[n.type]||'#888'}">${n.type}</span></td>
+              <td>${n.rels}</td>
+              <td>${n.triples}</td>
+              <td style="color:#8c8c8c;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${n.source}">${n.source}</td>
+              <td><span class="op-link" onclick="showEditNodeModal(${n.id})">编辑</span><span class="op-link danger" onclick="deleteNode(${n.id})">删除</span></td>
+            </tr>`).join('')}
+        </table>
+      </div>`;
+  } else {
+    content.innerHTML=`
+      <div class="table-section">
+        <div class="table-header">
+          <div class="table-header-title">三元组列表</div>
+          <div class="table-filters">
+            <input class="search-input" style="width:140px;height:28px" placeholder="头实体名称" id="filterHeadName"/>
+            <select class="filter-select" id="filterHeadType">
+              <option value="">头实体类型</option>
+              ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+            </select>
+            <select class="filter-select" id="filterRelType">
+              <option value="">关系类型</option>
+              <option>监管</option><option>颁布</option><option>遵循</option><option>制定</option><option>评估</option>
+              <option>包含</option><option>申请</option><option>产生</option><option>面临</option><option>影响</option>
+            </select>
+            <input class="search-input" style="width:140px;height:28px" placeholder="尾实体名称" id="filterTailName"/>
+            <select class="filter-select" id="filterTailType">
+              <option value="">尾实体类型</option>
+              ${Object.keys(nodeColors).map(t=>`<option value="${t}">${t}</option>`).join('')}
+            </select>
+            <button class="btn btn-primary" style="font-size:12px;padding:4px 10px" onclick="filterTriples()">搜索</button>
+            <button class="btn btn-outline" style="font-size:12px;padding:4px 10px" onclick="resetTripleFilter()">重置</button>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;padding:10px 16px;border-bottom:0.5px solid #f0f0f0">
+          <button class="btn btn-primary" style="font-size:12px;padding:5px 14px" onclick="showAddTripleModal()">+ 新增三元组</button>
+        </div>
+        <table class="data-table">
+          <tr><th>头实体</th><th>头类型</th><th>关系</th><th>尾实体</th><th>尾类型</th><th>操作</th></tr>
+          <tbody id="tripleTableBody">
+            ${renderTripleRows(tripleData)}
+          </tbody>
+        </table>
+      </div>`;
+  }
+}
+
+// ---- Triple Manage ----
+
+function renderTripleRows(data){
+  return data.map((t,i)=>`
+    <tr>
+      <td>${t.s}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[t.sType]||'#888'}22;color:${nodeColors[t.sType]||'#888'};border:0.5px solid ${nodeColors[t.sType]||'#888'}55">${t.sType||'未知'}</span></td>
+      <td><span style="background:#f0f0f0;padding:2px 7px;border-radius:10px;font-size:11px;color:#595959">${t.p}</span></td>
+      <td>${t.o}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[t.oType]||'#888'}22;color:${nodeColors[t.oType]||'#888'};border:0.5px solid ${nodeColors[t.oType]||'#888'}55">${t.oType||'未知'}</span></td>
+      <td><span class="op-link" onclick="showEditTripleModal(${i})">编辑</span><span class="op-link danger" onclick="deleteTriple(${i})">删除</span></td>
+    </tr>`).join('');
+}
+
+let filteredTripleData=tripleData;
+
+function filterTriples(){
+  const hName=document.getElementById('filterHeadName').value.trim().toLowerCase();
+  const hType=document.getElementById('filterHeadType').value;
+  const rel=document.getElementById('filterRelType').value;
+  const tName=document.getElementById('filterTailName').value.trim().toLowerCase();
+  const tType=document.getElementById('filterTailType').value;
+  filteredTripleData=tripleData.filter(tr=>{
+    if(hName&&!tr.s.toLowerCase().includes(hName))return false;
+    if(hType&&tr.sType!==hType)return false;
+    if(rel&&tr.p!==rel)return false;
+    if(tName&&!tr.o.toLowerCase().includes(tName))return false;
+    if(tType&&tr.oType!==tType)return false;
+    return true;
+  });
+  document.getElementById('tripleTableBody').innerHTML=renderTripleRows(filteredTripleData);
+}
+
+function resetTripleFilter(){
+  document.getElementById('filterHeadName').value='';
+  document.getElementById('filterHeadType').value='';
+  document.getElementById('filterRelType').value='';
+  document.getElementById('filterTailName').value='';
+  document.getElementById('filterTailType').value='';
+  filteredTripleData=tripleData;
+  document.getElementById('tripleTableBody').innerHTML=renderTripleRows(filteredTripleData);
+}
+
+function showAddTripleModal(){
+  document.getElementById('addTripleHeadName').value='';
+  document.getElementById('addTripleHeadType').value='';
+  document.getElementById('addTripleRel').value='';
+  document.getElementById('addTripleTailName').value='';
+  document.getElementById('addTripleTailType').value='';
+  document.getElementById('addTripleModal').classList.remove('hidden');
+}
+
+function doAddTriple(){
+  const s=document.getElementById('addTripleHeadName').value.trim();
+  const sType=document.getElementById('addTripleHeadType').value;
+  const p=document.getElementById('addTripleRel').value.trim();
+  const o=document.getElementById('addTripleTailName').value.trim();
+  const oType=document.getElementById('addTripleTailType').value;
+  if(!s||!p||!o){showToast('请填写完整信息');return;}
+  tripleData.push({s,p,o,sType,oType,conf:0.95,source:'手动添加'});
+  filteredTripleData=tripleData;
+  document.getElementById('addTripleModal').classList.add('hidden');
+  showToast('三元组添加成功');
+  renderKgManage();
+}
+
+function showEditTripleModal(idx){
+  const t=filteredTripleData[idx];
+  if(!t)return;
+  document.getElementById('editTripleIdx').value=idx;
+  document.getElementById('editTripleHeadName').value=t.s;
+  document.getElementById('editTripleHeadType').value=t.sType||'';
+  document.getElementById('editTripleRel').value=t.p;
+  document.getElementById('editTripleTailName').value=t.o;
+  document.getElementById('editTripleTailType').value=t.oType||'';
+  document.getElementById('editTripleModal').classList.remove('hidden');
+}
+
+function doEditTriple(){
+  const idx=parseInt(document.getElementById('editTripleIdx').value);
+  const t=filteredTripleData[idx];
+  if(!t)return;
+  const realIdx=tripleData.findIndex(x=>x.s===t.s&&x.p===t.p&&x.o===t.o);
+  if(realIdx>-1){
+    tripleData[realIdx].s=document.getElementById('editTripleHeadName').value.trim();
+    tripleData[realIdx].sType=document.getElementById('editTripleHeadType').value;
+    tripleData[realIdx].p=document.getElementById('editTripleRel').value.trim();
+    tripleData[realIdx].o=document.getElementById('editTripleTailName').value.trim();
+    tripleData[realIdx].oType=document.getElementById('editTripleTailType').value;
+  }
+  filteredTripleData=tripleData;
+  document.getElementById('editTripleModal').classList.add('hidden');
+  showToast('三元组编辑成功');
+  renderKgManage();
+}
+
+function deleteTriple(idx){
+  const t=filteredTripleData[idx];
+  if(t&&confirm('确定要删除该三元组吗？')){
+    const realIdx=tripleData.findIndex(x=>x.s===t.s&&x.p===t.p&&x.o===t.o);
+    if(realIdx>-1)tripleData.splice(realIdx,1);
+    filteredTripleData=tripleData;
+    showToast('三元组已删除');
+    renderKgManage();
+  }
+}
+
+// ---- Node Edit Modal ----
+function showEditNodeModal(nodeId){
+  const n=nodeData.find(x=>x.id===nodeId);
+  if(!n)return;
+  document.getElementById('editNodeId').value=nodeId;
+  document.getElementById('editNodeName').value=n.name;
+  document.getElementById('editNodeType').value=n.type;
+  document.getElementById('editNodeDesc').value=n.desc||'';
+  document.getElementById('editNodeModal').classList.remove('hidden');
+}
+function doEditNode(){
+  const id=parseInt(document.getElementById('editNodeId').value);
+  const desc=document.getElementById('editNodeDesc').value.trim();
+  const n=nodeData.find(x=>x.id===id);
+  if(n){n.desc=desc;showToast('节点编辑成功');renderKgManage();}
+  document.getElementById('editNodeModal').classList.add('hidden');
+}
+function deleteNode(nodeId){
+  const n=nodeData.find(x=>x.id===nodeId);
+  if(n&&confirm('确定要删除节点"'+n.name+'"吗？')){
+    const idx=nodeData.findIndex(x=>x.id===nodeId);
+    if(idx>-1)nodeData.splice(idx,1);
+    renderKgManage();
+    showToast('节点已删除');
+  }
+}
+
+// ---- KG Graph Data ----
+const KG_NODES = [
+  {id:'客户',type:'客户主体'},
+  {id:'个人客户',type:'客户主体'},{id:'对公客户',type:'客户主体'},
+  {id:'核心个人',type:'客户主体'},{id:'核心对公',type:'客户主体'},
+  {id:'机构',type:'客户主体'},{id:'法人',type:'客户主体'},
+  {id:'贷款',type:'金融产品'},{id:'个人贷款',type:'金融产品'},
+  {id:'对公贷款',type:'金融产品'},{id:'小额贷款',type:'金融产品'},
+  {id:'存款',type:'金融产品'},{id:'同业存款',type:'金融产品'},
+  {id:'同业借贷',type:'金融产品'},{id:'票据融资',type:'金融产品'},
+  {id:'利息',type:'财务指标'},{id:'利差',type:'财务指标'},
+  {id:'坏账',type:'风险指标'},{id:'不良贷款率',type:'风险指标'},
+  {id:'资本充足率',type:'监管指标'},{id:'流动性覆盖率',type:'监管指标'},
+  {id:'拨备覆盖率',type:'监管指标'},{id:'净稳定资金比例',type:'监管指标'},
+  {id:'商业银行',type:'监管主体'},{id:'中国银保监会',type:'监管机构'},
+  {id:'中国人民银行',type:'监管机构'},{id:'巴塞尔协议III',type:'法规文件'},
+  {id:'银行业监督管理法',type:'法规文件'},{id:'反洗钱',type:'合规要求'},
+  {id:'信用风险',type:'风险类别'},{id:'流动性风险',type:'风险类别'},
+  {id:'操作风险',type:'风险类别'},{id:'系统性风险',type:'风险类别'},
+  {id:'年报披露',type:'报告要求'},{id:'压力测试',type:'监管工具'}
+];
+const KG_EDGES = [
+  {s:'客户',t:'个人客户',r:'包含'},{s:'客户',t:'对公客户',r:'包含'},
+  {s:'个人客户',t:'核心个人',r:'包含'},{s:'对公客户',t:'核心对公',r:'包含'},
+  {s:'对公客户',t:'机构',r:'包含'},{s:'对公客户',t:'法人',r:'包含'},
+  {s:'贷款',t:'个人贷款',r:'包含'},{s:'贷款',t:'对公贷款',r:'包含'},
+  {s:'贷款',t:'小额贷款',r:'包含'},{s:'贷款',t:'票据融资',r:'包含'},
+  {s:'存款',t:'同业存款',r:'包含'},{s:'存款',t:'同业借贷',r:'关联'},
+  {s:'个人客户',t:'个人贷款',r:'申请'},{s:'对公客户',t:'对公贷款',r:'申请'},
+  {s:'核心个人',t:'小额贷款',r:'申请'},{s:'机构',t:'同业借贷',r:'参与'},
+  {s:'法人',t:'对公贷款',r:'担保'},{s:'贷款',t:'利息',r:'产生'},
+  {s:'存款',t:'利息',r:'产生'},{s:'利息',t:'利差',r:'计算'},
+  {s:'贷款',t:'坏账',r:'风险'},{s:'坏账',t:'不良贷款率',r:'影响'},
+  {s:'商业银行',t:'资本充足率',r:'需满足'},{s:'商业银行',t:'流动性覆盖率',r:'需满足'},
+  {s:'商业银行',t:'净稳定资金比例',r:'需满足'},{s:'商业银行',t:'拨备覆盖率',r:'需满足'},
+  {s:'商业银行',t:'贷款',r:'发放'},{s:'商业银行',t:'存款',r:'吸收'},
+  {s:'中国银保监会',t:'商业银行',r:'监管'},{s:'中国银保监会',t:'银行业监督管理法',r:'依据'},
+  {s:'中国人民银行',t:'商业银行',r:'监管'},{s:'中国人民银行',t:'净稳定资金比例',r:'制定'},
+  {s:'资本充足率',t:'巴塞尔协议III',r:'参照'},{s:'商业银行',t:'信用风险',r:'面临'},
+  {s:'商业银行',t:'流动性风险',r:'面临'},{s:'商业银行',t:'操作风险',r:'面临'},
+  {s:'系统性风险',t:'商业银行',r:'影响'},{s:'商业银行',t:'反洗钱',r:'执行'},
+  {s:'商业银行',t:'年报披露',r:'须完成'},{s:'中国银保监会',t:'压力测试',r:'要求'},
+  {s:'商业银行',t:'压力测试',r:'参与'},{s:'不良贷款率',t:'坏账',r:'衡量'},
+  {s:'票据融资',t:'利息',r:'产生'},{s:'同业存款',t:'利差',r:'影响'}
+];
+
+// 计算每个节点的连接数
+function buildKgGraph(nodes, edges){
+  const degMap={};
+  nodes.forEach(n=>degMap[n.id]=0);
+  edges.forEach(e=>{
+    if(degMap[e.s]!==undefined)degMap[e.s]++;
+    if(degMap[e.t]!==undefined)degMap[e.t]++;
+  });
+  return {nodes:nodes.map(n=>({...n,deg:degMap[n.id]||0})),edges};
+}
+
+const typeColorMap={
+  '客户主体':'#1677ff','金融产品':'#52c41a','财务指标':'#fa8c16',
+  '风险指标':'#ff4d4f','监管指标':'#722ed1','监管主体':'#13c2c2',
+  '监管机构':'#2f54eb','法规文件':'#eb2f96','合规要求':'#faad14',
+  '风险类别':'#f5222d','报告要求':'#08979c','监管工具':'#531dab'
+};
+
+let simRef=null;
+let visRelFilters={};
+let visMode='all';
+let visLayout='force';
+let visLimit='all';
+let visSearchNode='';
+let visDepth=2;
+let visHighlightNodes=new Set();
+let currentLayoutNodes=[];
+let currentLayoutEdges=[];
+
+function renderForceGraph(svgEl, nodes, edges, opts={}){
+  const rect=svgEl.getBoundingClientRect();
+  const W=rect.width||800, H=rect.height||500;
+  const margin=60; // boundary margin for circular constraint
+  const layoutType=opts.layout||visLayout||'force';
+  if(simRef){simRef.stop();simRef=null;}
+  svgEl.innerHTML='';
+
+  const ns='http://www.w3.org/2000/svg';
+  const defs=document.createElementNS(ns,'defs');
+  const marker=document.createElementNS(ns,'marker');
+  marker.setAttribute('id','arr');marker.setAttribute('markerWidth','8');
+  marker.setAttribute('markerHeight','6');marker.setAttribute('refX','8');
+  marker.setAttribute('refY','3');marker.setAttribute('orient','auto');
+  const mp=document.createElementNS(ns,'path');
+  mp.setAttribute('d','M0,0 L0,6 L8,3 z');mp.setAttribute('fill','#ccc');
+  marker.appendChild(mp);defs.appendChild(marker);svgEl.appendChild(defs);
+
+  // zoom group
+  const g=document.createElementNS(ns,'g');g.id='zoomG';svgEl.appendChild(g);
+
+  // Draw circular boundary background
+  const bgCircle=document.createElementNS(ns,'circle');
+  bgCircle.setAttribute('cx',W/2);bgCircle.setAttribute('cy',H/2);
+  bgCircle.setAttribute('r',Math.min(W,H)/2-margin);
+  bgCircle.setAttribute('fill','#f8f9fc');bgCircle.setAttribute('stroke','#e0e0e0');
+  bgCircle.setAttribute('stroke-width','1.5');bgCircle.setAttribute('stroke-dasharray','8,4');
+  bgCircle.setAttribute('opacity','0.8');
+  g.insertBefore(bgCircle,g.firstChild);
+
+  const deg={}; nodes.forEach(n=>deg[n.id]=n.deg||0);
+  const maxDeg=Math.max(...Object.values(deg),1);
+  const rScale=n=>{const d=deg[n.id]||0;return Math.max(opts.minR||10, Math.round(10+(d/maxDeg)*10));};
+
+  // build adjacency for click highlight
+  const adj={};
+  nodes.forEach(n=>adj[n.id]={nbrs:new Set(),rels:[]});
+  edges.forEach(e=>{
+    if(adj[e.s])adj[e.s].nbrs.add(e.t);
+    if(adj[e.t])adj[e.t].nbrs.add(e.s);
+    if(adj[e.s])adj[e.s].rels.push({other:e.t,rel:e.r,dir:'out'});
+    if(adj[e.t])adj[e.t].rels.push({other:e.s,rel:e.r,dir:'in'});
+  });
+
+  // shallow clone nodes/edges for simulation
+  // 根据布局类型计算初始位置
+  let simNodes;
+  if(layoutType==='circular'){
+    // 圆形布局：所有节点排列在一个大圆上
+    const maxR=Math.min(W,H)/2-margin-30;
+    simNodes=nodes.map((n,i)=>{
+      const angle=(i/nodes.length)*Math.PI*2;
+      return{...n,x:W/2+Math.cos(angle)*maxR,y:H/2+Math.sin(angle)*maxR,vx:0,vy:0};
+    });
+  }else if(layoutType==='radial'){
+    // 辐射布局：中心放高度数节点，外圈放低度数节点
+    const nodeList=nodes.map((n,i)=>({n,d:n.deg||0,i}));
+    nodeList.sort((a,b)=>b.d-a.d);
+    const rings=[];
+    let ring=0,count=0;
+    const ringCapacity=n=>Math.max(4,Math.floor(n/3));
+    nodeList.forEach(item=>{
+      if(count>=ringCapacity(nodes.length)&&ring<3){ring++;count=0;}
+      rings.push(ring);
+      count++;
+    });
+    simNodes=nodeList.map((item,i)=>{
+      const ringNodes=nodeList.filter((x,j)=>rings[j]===rings[i]).length;
+      const ringStart=nodeList.filter((x,j)=>rings[j]<rings[i]).length;
+      const idx=i-ringStart;
+      const angle=(idx/ringNodes)*Math.PI*2;
+      const maxR=Math.min(W,H)/2-margin-30;
+      const radius=maxR*(0.2+rings[i]*0.25);
+      return{...item.n,x:W/2+Math.cos(angle)*radius,y:H/2+Math.sin(angle)*radius,vx:0,vy:0};
+    });
+  }else{
+    // 力导向布局：同心的圆形分布
+    const nodeList=nodes.map((n,i)=>({n,d:n.deg||0,i}));
+    nodeList.sort((a,b)=>b.d-a.d);
+    const rings=[];
+    let ring=0,count=0;
+    const ringCapacity=n=>Math.max(6,Math.floor(n/3));
+    nodeList.forEach(item=>{
+      if(count>=ringCapacity(nodes.length)&&ring<3){ring++;count=0;}
+      rings.push(ring);
+      count++;
+    });
+    simNodes=nodeList.map((item,i)=>{
+      const ringNodes=nodeList.filter((x,j)=>rings[j]===rings[i]).length;
+      const ringStart=nodeList.filter((x,j)=>rings[j]<rings[i]).length;
+      const idx=i-ringStart;
+      const angle=(idx/ringNodes)*Math.PI*2+Math.random()*0.5;
+      const maxR=Math.min(W,H)/2-margin-20;
+      const radius=maxR*(0.25+rings[i]*0.2)+Math.random()*10;
+      return{...item.n,x:W/2+Math.cos(angle)*radius,y:H/2+Math.sin(angle)*radius,vx:0,vy:0};
+    });
+  }
+  const simEdges=edges.map(e=>({...e,source:e.s,target:e.t}));
+  const nodeById={};simNodes.forEach(n=>nodeById[n.id]=n);
+  simEdges.forEach(e=>{e.source=nodeById[e.s];e.target=nodeById[e.t];});
+
+  // draw edges
+  const linkG=document.createElementNS(ns,'g');g.appendChild(linkG);
+  const linkEls={};
+  simEdges.forEach((e,i)=>{
+    const line=document.createElementNS(ns,'line');
+    line.setAttribute('stroke','#d9d9d9');line.setAttribute('stroke-width','1');
+    line.setAttribute('marker-end','url(#arr)');
+    linkG.appendChild(line);linkEls[i]=line;
+  });
+
+  // edge labels
+  const lblG=document.createElementNS(ns,'g');g.appendChild(lblG);
+  const lblEls={};
+  simEdges.forEach((e,i)=>{
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('font-size','9');t.setAttribute('fill','#bfbfbf');
+    t.setAttribute('text-anchor','middle');t.setAttribute('pointer-events','none');
+    t.textContent=e.r;lblG.appendChild(t);lblEls[i]=t;
+  });
+
+  // draw nodes
+  const nodeG=document.createElementNS(ns,'g');g.appendChild(nodeG);
+  const nodeEls={};const nodeLbls={};
+  simNodes.forEach(n=>{
+    const c=typeColorMap[n.type]||'#888';
+    const r=rScale(n);
+    const grp=document.createElementNS(ns,'g');
+    grp.style.cursor='pointer';
+    const circle=document.createElementNS(ns,'circle');
+    circle.setAttribute('r',r);circle.setAttribute('fill',c+'22');
+    circle.setAttribute('stroke',c);circle.setAttribute('stroke-width','1.5');
+    circle.style.transition='all 0.2s';
+    const label=document.createElementNS(ns,'text');
+    label.setAttribute('text-anchor','middle');label.setAttribute('font-size','10');
+    label.setAttribute('fill','#333');label.setAttribute('pointer-events','none');
+    label.setAttribute('dy',r+16);label.textContent=n.id;
+    grp.appendChild(circle);grp.appendChild(label);
+    nodeG.appendChild(grp);nodeEls[n.id]={grp,circle,r,color:c};nodeLbls[n.id]=label;
+
+    // drag
+    let dragging=false,ox,oy,nx,ny;
+    grp.addEventListener('mousedown',ev=>{
+      dragging=true;ox=ev.clientX;oy=ev.clientY;nx=n.x;ny=n.y;
+      n.fx=n.x;n.fy=n.y;ev.stopPropagation();
+    });
+    document.addEventListener('mousemove',ev=>{
+      if(!dragging)return;
+      const dx=ev.clientX-ox,dy=ev.clientY-oy;
+      n.fx=nx+dx;n.fy=ny+dy;
+      if(simRef)simRef.alpha(0.3).restart();
+    });
+    document.addEventListener('mouseup',()=>{if(dragging){dragging=false;n.fx=null;n.fy=null;}});
+
+    grp.addEventListener('click',ev=>{
+      ev.stopPropagation();
+      highlightNode(n.id,adj,nodeEls,linkEls,simEdges,opts);
+    });
+  });
+
+  // pan/zoom
+  let scale=1,tx=0,ty=0,panning=false,px,py;
+  svgEl.addEventListener('mousedown',ev=>{panning=true;px=ev.clientX-tx;py=ev.clientY-ty;});
+  svgEl.addEventListener('mousemove',ev=>{if(!panning)return;tx=ev.clientX-px;ty=ev.clientY-py;g.setAttribute('transform',`translate(${tx},${ty}) scale(${scale})`);});
+  svgEl.addEventListener('mouseup',()=>panning=false);
+  svgEl.addEventListener('wheel',ev=>{ev.preventDefault();scale=Math.max(0.3,Math.min(3,scale*(ev.deltaY<0?1.1:0.9)));g.setAttribute('transform',`translate(${tx},${ty}) scale(${scale})`);});
+
+  // simple force sim (no d3) - optimized for better spreading
+  let totalEnergy=Infinity,stableCount=0;
+  function tick(){
+    simNodes.forEach(n=>{if(n.vx===undefined)n.vx=0;if(n.vy===undefined)n.vy=0;});
+
+    // 只有力导向布局才应用力模拟
+    if(layoutType==='force'){
+      // Strong repulsion with collision avoidance
+      for(let i=0;i<simNodes.length;i++){
+        for(let j=i+1;j<simNodes.length;j++){
+          const a=simNodes[i],b=simNodes[j];
+          const ra=Math.max(rScale(a),8)+a.id.length*4.5;
+          const rb=Math.max(rScale(b),8)+b.id.length*4.5;
+          const dx=b.x-a.x,dy=b.y-a.y;
+          const dist=Math.sqrt(dx*dx+dy*dy)||1;
+          const minDist=ra+rb+50;
+          if(dist<minDist){
+            const f=(minDist-dist)/dist*12.0; // very strong repulsion
+            a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f;
+          } else {
+            const f=180000/(dist*dist); // stronger long-range repulsion
+            a.vx-=dx/dist*f;a.vy-=dy/dist*f;b.vx+=dx/dist*f;b.vy+=dy/dist*f;
+          }
+        }
+      }
+      // attraction (spring force) - weaker to allow spreading
+      simEdges.forEach(e=>{
+        const s=e.source,t=e.target;
+        if(!s||!t)return;
+        const dx=t.x-s.x,dy=t.y-s.y;
+        const dist=Math.sqrt(dx*dx+dy*dy)||1;
+        const ideal=250,f=(dist-ideal)/dist*0.006;
+        s.vx+=dx*f;s.vy+=dy*f;t.vx-=dx*f;t.vy-=dy*f;
+      });
+      // gentle center pull to keep graph centered
+      simNodes.forEach(n=>{n.vx+=(W/2-n.x)*0.0008;n.vy+=(H/2-n.y)*0.0008;});
+    } else {
+      // 圆形和辐射布局：轻微的排斥力避免重叠，但不改变整体布局
+      for(let i=0;i<simNodes.length;i++){
+        for(let j=i+1;j<simNodes.length;j++){
+          const a=simNodes[i],b=simNodes[j];
+          const ra=Math.max(rScale(a),8)+a.id.length*4.5;
+          const rb=Math.max(rScale(b),8)+b.id.length*4.5;
+          const dx=b.x-a.x,dy=b.y-a.y;
+          const dist=Math.sqrt(dx*dx+dy*dy)||1;
+          const minDist=ra+rb+30;
+          if(dist<minDist){
+            const f=(minDist-dist)/dist*2.0; // 轻微排斥力
+            a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f;
+          }
+        }
+      }
+    }
+
+    // integrate
+    let energy=0;
+    simNodes.forEach(n=>{
+      if(n.fx!=null){n.x=n.fx;n.y=n.fy;n.vx=0;n.vy=0;return;}
+      n.vx*=0.88;n.vy*=0.88;
+      const maxV=layoutType==='force'?10:2; // 圆形/辐射布局速度更小
+      const v=Math.sqrt(n.vx*n.vx+n.vy*n.vy);
+      if(v>maxV){n.vx=(n.vx/v)*maxV;n.vy=(n.vy/v)*maxV;}
+      n.x+=n.vx;n.y+=n.vy;
+      energy+=v;
+      // Enhanced circular boundary constraint - keep nodes well inside the circle
+      const centerX=W/2,centerY=H/2;
+      const maxRadius=Math.min(W,H)/2-margin-15;
+      const dx=n.x-centerX,dy=n.y-centerY;
+      const distFromCenter=Math.sqrt(dx*dx+dy*dy)||0.01;
+      // Soft boundary: push inward when approaching edge
+      if(distFromCenter>maxRadius*0.85){
+        const pushForce=(distFromCenter-maxRadius*0.85)*0.15;
+        n.vx-=(dx/distFromCenter)*pushForce;
+        n.vy-=(dy/distFromCenter)*pushForce;
+      }
+      // Hard boundary: clamp position if exceeding radius
+      if(distFromCenter>maxRadius){
+        const angle=Math.atan2(dy,dx);
+        n.x=centerX+Math.cos(angle)*maxRadius;
+        n.y=centerY+Math.sin(angle)*maxRadius;
+        n.vx*=0.1;n.vy*=0.1;
+      }
+    });
+    
+    // check convergence
+    if(Math.abs(totalEnergy-energy)<0.5)stableCount++;else stableCount=0;
+    totalEnergy=energy;
+    // 根据布局类型决定停止条件
+    const minStable=layoutType==='force'?100:30;
+    const minTicks=layoutType==='force'?200:50;
+    if(stableCount>minStable&&tickCount>minTicks){simRef.stop();simRef=null;return;} // stop if stable
+    // update DOM
+    simEdges.forEach((e,i)=>{
+      const s=e.source,t=e.target;
+      if(!s||!t)return;
+      const r1=nodeEls[s.id]?nodeEls[s.id].r:10;
+      const r2=nodeEls[t.id]?nodeEls[t.id].r:10;
+      const dx=t.x-s.x,dy=t.y-s.y,len=Math.sqrt(dx*dx+dy*dy)||1;
+      const x1=s.x+dx/len*r1,y1=s.y+dy/len*r1;
+      const x2=t.x-dx/len*(r2+6),y2=t.y-dy/len*(r2+6);
+      linkEls[i].setAttribute('x1',x1);linkEls[i].setAttribute('y1',y1);
+      linkEls[i].setAttribute('x2',x2);linkEls[i].setAttribute('y2',y2);
+      lblEls[i].setAttribute('x',(x1+x2)/2);lblEls[i].setAttribute('y',(y1+y2)/2-4);
+    });
+    simNodes.forEach(n=>{
+      const el=nodeEls[n.id];if(!el)return;
+      el.circle.setAttribute('cx',n.x);el.circle.setAttribute('cy',n.y);
+      nodeLbls[n.id].setAttribute('x',n.x);nodeLbls[n.id].setAttribute('y',n.y);
+    });
+  }
+
+  let frame=0,tickCount=0;
+  function loop(){frame=requestAnimationFrame(loop);tick();tickCount++;}
+  simRef={stop:()=>cancelAnimationFrame(frame)};
+  loop();
+  // Auto-stop after 8 seconds to let user interact with stable layout
+  setTimeout(()=>{if(simRef){simRef.stop();simRef=null;}},8000);
+
+  // update counts
+  if(opts.countNodeEl)opts.countNodeEl.textContent=nodes.length;
+  if(opts.countEdgeEl)opts.countEdgeEl.textContent=edges.length;
+}
+
+function highlightNode(id, adj, nodeEls, linkEls, simEdges, opts){
+  const nbrs=adj[id]?.nbrs||new Set();
+  const rels=adj[id]?.rels||[];
+  // dim/highlight nodes
+  Object.keys(nodeEls).forEach(nid=>{
+    const el=nodeEls[nid];
+    if(nid===id){
+      el.circle.setAttribute('stroke-width','3');el.circle.setAttribute('fill',el.color+'88');
+    } else if(nbrs.has(nid)){
+      el.circle.setAttribute('stroke-width','2');el.circle.setAttribute('fill',el.color+'55');el.circle.style.opacity='1';
+    } else {
+      el.circle.style.opacity='0.15';
+    }
+  });
+  // highlight edges
+  simEdges.forEach((e,i)=>{
+    const sid=e.s,tid=e.t;
+    if(sid===id||tid===id){
+      linkEls[i].setAttribute('stroke','#1677ff');linkEls[i].setAttribute('stroke-width','1.8');
+    } else {
+      linkEls[i].style.opacity='0.08';
+    }
+  });
+  // show info panel
+  const panel=document.getElementById(opts.panelId||'nodeInfoPanel');
+  const content=document.getElementById(opts.contentId||'nodeInfoContent');
+  if(panel&&content){
+    const n=KG_NODES.find(x=>x.id===id)||{id,type:'未知'};
+    const deg=adj[id]?adj[id].rels.length:0;
+    content.innerHTML=`
+      <div style="margin-bottom:8px"><span style="font-size:11px;color:#8c8c8c">节点名称</span><div style="font-size:13px;font-weight:500;color:#1a1a1a;margin-top:2px">${id}</div></div>
+      <div style="margin-bottom:8px"><span style="font-size:11px;color:#8c8c8c">节点类型</span><div style="margin-top:3px"><span style="font-size:11px;padding:2px 7px;border-radius:10px;background:${typeColorMap[n.type]||'#888'}22;color:${typeColorMap[n.type]||'#888'};border:0.5px solid ${typeColorMap[n.type]||'#888'}55">${n.type}</span></div></div>
+      <div style="margin-bottom:10px"><span style="font-size:11px;color:#8c8c8c">连接数</span><div style="font-size:16px;font-weight:500;color:#1677ff;margin-top:2px">${deg}</div></div>
+      <div><span style="font-size:11px;color:#8c8c8c">相关关系</span>
+        <div style="margin-top:4px;max-height:120px;overflow-y:auto">
+          ${rels.map(r=>`<div style="font-size:11px;color:#595959;padding:3px 0;border-bottom:0.5px solid #f5f5f5;display:flex;align-items:center;gap:4px">
+            ${r.dir==='out'?`<span style="color:#1a1a1a">${id}</span><span style="color:#8c8c8c">→${r.rel}→</span><span style="color:#1677ff">${r.other}</span>`
+            :`<span style="color:#1677ff">${r.other}</span><span style="color:#8c8c8c">→${r.rel}→</span><span style="color:#1a1a1a">${id}</span>`}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    panel.style.display='block';
+  }
+}
+
+function closeNodeInfo(){
+  const p=document.getElementById('nodeInfoPanel');if(p)p.style.display='none';
+  // reset opacity
+  document.querySelectorAll('#docKgSvg circle,[id^=visSvg] circle').forEach(c=>{c.style.opacity='';c.setAttribute('stroke-width','1.8');});
+  document.querySelectorAll('#docKgSvg line,[id^=visSvg] line').forEach(l=>{l.style.opacity='';l.setAttribute('stroke','#d9d9d9');l.setAttribute('stroke-width','1');});
+}
+
+// ---- Doc KG Render ----
+function renderDocKg(){
+  const svgEl=document.getElementById('docKgSvg');
+  if(!svgEl)return;
+  const graph=buildKgGraph(KG_NODES, KG_EDGES);
+  document.getElementById('kgNodeCount').textContent=graph.nodes.length;
+  document.getElementById('kgEdgeCount').textContent=graph.edges.length;
+  renderForceGraph(svgEl, graph.nodes, graph.edges, {
+    panelId:'nodeInfoPanel', contentId:'nodeInfoContent', minR:9
+  });
+  renderDocKgLegend();
+}
+
+function renderDocKgLegend(){
+  // inject a legend overlay inside kgContainer if not exists
+  let leg=document.getElementById('docKgLegend');
+  if(!leg){
+    leg=document.createElement('div');
+    leg.id='docKgLegend';
+    leg.style.cssText='position:absolute;left:12px;top:12px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:10px 12px;z-index:20;max-height:300px;overflow-y:auto';
+    document.getElementById('kgContainer').appendChild(leg);
+  }
+  leg.innerHTML='<div style="font-size:11px;font-weight:500;color:#1a1a1a;margin-bottom:6px">节点类型</div>'+
+    Object.entries(typeColorMap).map(([t,c])=>`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;font-size:10px;color:#595959;cursor:pointer" onclick="filterByType('${t}')">
+      <div style="width:8px;height:8px;border-radius:50%;background:${c};flex-shrink:0"></div>${t}
+    </div>`).join('');
+}
+
+function filterByType(type){
+  showToast('筛选节点类型：'+type);
+}
+
+// ---- Full Visualization ----
+function getRelTypes(){
+  const types=new Set();
+  KG_EDGES.forEach(e=>types.add(e.r));
+  return Array.from(types);
+}
+
+function renderVisRelFilters(){
+  const container=document.getElementById('visRelFilter');
+  if(!container)return;
+  const relTypes=getRelTypes();
+  container.innerHTML=relTypes.map(r=>{
+    const count=KG_EDGES.filter(e=>e.r===r).length;
+    const checked=visRelFilters[r]!==false?'checked':'';
+    return `<label class="vis-rel-filter-item ${checked?'':'disabled'}">
+      <input type="checkbox" ${checked} onchange="toggleVisRelFilter('${r}',this.checked)">
+      <span>${r}(${count})</span>
+    </label>`;
+  }).join('');
+}
+
+function toggleVisRelFilter(rel,checked){
+  visRelFilters[rel]=checked;
+  renderVisRelFilters();
+  renderVis();
+}
+
+function switchVisMode(mode,btn){
+  visMode=mode;
+  document.querySelectorAll('.vis-toolbar .vis-tool-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  renderVis();
+}
+
+function resetVisLayout(){
+  visLayout='force';
+  visLimit='all';
+  visSearchNode='';
+  visDepth=2;
+  visHighlightNodes=new Set();
+  document.getElementById('visLayoutSelect').value='force';
+  document.getElementById('visLimitSelect').value='all';
+  document.getElementById('visSearchInput').value='';
+  document.getElementById('visDepthSelect').value='2';
+  renderVis();
+  showToast('布局已重置');
+}
+
+// 切换布局
+function changeVisLayout(layout){
+  visLayout=layout;
+  renderVis();
+}
+
+// 切换显示数量限制
+function changeVisLimit(limit){
+  visLimit=limit;
+  renderVis();
+}
+
+// 根据搜索深度获取子图
+function getSubgraphByDepth(startNodeId, maxDepth){
+  const resultNodes=new Set([startNodeId]);
+  const resultEdges=[];
+  const visitedEdges=new Set();
+  let currentLevel=new Set([startNodeId]);
+
+  for(let depth=1;depth<=maxDepth;depth++){
+    const nextLevel=new Set();
+    KG_EDGES.forEach(e=>{
+      if(visitedEdges.has(e))return;
+      // 检查当前层级的节点是否与这条边相关
+      let matched=false;
+      let matchedDepth=0;
+      if(currentLevel.has(e.s)&&!resultNodes.has(e.t)){
+        matched=true;
+        matchedDepth=depth;
+        nextLevel.add(e.t);
+      }
+      if(currentLevel.has(e.t)&&!resultNodes.has(e.s)){
+        matched=true;
+        matchedDepth=depth;
+        nextLevel.add(e.s);
+      }
+      if(matched){
+        resultNodes.add(e.s);
+        resultNodes.add(e.t);
+        resultEdges.push({...e,depth:matchedDepth});
+        visitedEdges.add(e);
+      }
+    });
+    currentLevel=nextLevel;
+    if(currentLevel.size===0)break;
+  }
+
+  const nodes=KG_NODES.filter(n=>resultNodes.has(n.id));
+  return {nodes,edges:resultEdges};
+}
+
+// 搜索节点
+function searchVisNode(){
+  const keyword=document.getElementById('visSearchInput').value.trim();
+  visSearchNode=keyword;
+  visDepth=parseInt(document.getElementById('visDepthSelect').value)||2;
+
+  if(!keyword){
+    visHighlightNodes=new Set();
+    renderVis();
+    return;
+  }
+
+  // 模糊匹配节点
+  const matchedNodes=KG_NODES.filter(n=>n.id.includes(keyword)||(n.name&&n.name.includes(keyword)));
+  if(matchedNodes.length===0){
+    showToast('未找到匹配的节点');
+    return;
+  }
+
+  // 获取所有要显示的节点和边
+  const allResultNodes=new Set();
+  const allResultEdges=[];
+  const visitedEdges=new Set();
+
+  matchedNodes.forEach(startNode=>{
+    const subgraph=getSubgraphByDepth(startNode.id, visDepth);
+    subgraph.nodes.forEach(n=>allResultNodes.add(n.id));
+    subgraph.edges.forEach(e=>{
+      const key=e.s+'-'+e.t+'-'+e.r;
+      if(!visitedEdges.has(key)){
+        allResultEdges.push(e);
+        visitedEdges.add(key);
+      }
+    });
+  });
+
+  visHighlightNodes=new Set([...allResultNodes]);
+  currentLayoutNodes=KG_NODES.filter(n=>allResultNodes.has(n.id));
+  currentLayoutEdges=allResultEdges;
+
+  renderVis();
+  showToast(`找到 ${matchedNodes.length} 个匹配节点，显示 ${allResultNodes.size} 个节点，${allResultEdges.length} 条关系`);
+}
+
+function renderVis(){
+  const svgEl=document.getElementById('visSvg');
+  if(!svgEl)return;
+
+  // filter edges by relation type
+  let filteredEdges=KG_EDGES.filter(e=>visRelFilters[e.r]!==false);
+
+  // 如果有搜索关键词，使用搜索结果
+  let filteredNodes;
+  if(visSearchNode){
+    filteredNodes=currentLayoutNodes;
+    filteredEdges=currentLayoutEdges.filter(e=>visRelFilters[e.r]!==false);
+  }else{
+    // filter nodes that have at least one edge
+    const connectedNodeIds=new Set();
+    filteredEdges.forEach(e=>{connectedNodeIds.add(e.s);connectedNodeIds.add(e.t);});
+    filteredNodes=KG_NODES.filter(n=>connectedNodeIds.has(n.id));
+  }
+
+  // 应用数量限制
+  if(visLimit!=='all'&&filteredEdges.length>parseInt(visLimit)){
+    filteredEdges=filteredEdges.slice(0,parseInt(visLimit));
+    const limitedNodeIds=new Set();
+    filteredEdges.forEach(e=>{limitedNodeIds.add(e.s);limitedNodeIds.add(e.t);});
+    filteredNodes=filteredNodes.filter(n=>limitedNodeIds.has(n.id));
+  }
+
+  const graph=buildKgGraph(filteredNodes, filteredEdges);
+  renderForceGraph(svgEl, graph.nodes, graph.edges, {
+    panelId:'visNodePanel', contentId:'visNodeContent', minR:10, layout:visLayout
+  });
+  // Legend
+  const legend=document.getElementById('kgLegend');
+  if(legend){
+    legend.innerHTML=`<div class="vis-legend-title">节点类型</div>`+
+      Object.entries(typeColorMap).map(([t,c])=>`<div class="vis-legend-item"><div class="vis-legend-dot" style="background:${c}"></div>${t}</div>`).join('');
+  }
+  // render relation filters
+  renderVisRelFilters();
+}
+
+function closeVisNodeInfo(){
+  const p=document.getElementById('visNodePanel');if(p)p.style.display='none';
+  document.querySelectorAll('#visSvg circle').forEach(c=>{c.style.opacity='';c.setAttribute('stroke-width','1.8');});
+  document.querySelectorAll('#visSvg line').forEach(l=>{l.style.opacity='';l.setAttribute('stroke','#d9d9d9');l.setAttribute('stroke-width','1');});
+}
+function showToast(msg){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.className='toast';
+  setTimeout(()=>t.className='toast hide',4000);
+}
+function showUpload(){document.getElementById('uploadModal').classList.remove('hidden')}
+function showNewDir(){document.getElementById('newDirModal').classList.remove('hidden')}
+function createDir(){
+  const name=document.getElementById('newDirInput').value.trim();
+  if(name){
+    dirs.push({id:dirs.length+1,name:'目录'+(dirs.length+1)+' - '+name,open:true});
+    renderTree();
+    showToast('目录"'+name+'"创建成功');
+  }
+  document.getElementById('newDirModal').classList.add('hidden');
+}
+function deleteDoc(){
+  if(confirm('确定要删除文档"'+currentDoc.name+'"吗？')){
+    const idx=docs.findIndex(d=>d.id===currentDoc.id);
+    if(idx>-1)docs.splice(idx,1);
+    currentDoc=null;
+    renderTree();
+    renderDocView();
+    showToast('文档已删除');
+  }
+}
+function showBuildDir(dirId){
+  const dir=dirs.find(d=>d.id===dirId);
+  if(dir){
+    document.getElementById('buildDocName').textContent='目录：'+dir.name;
+    document.getElementById('buildModal').classList.remove('hidden');
+    selectBuildOpt('dir');
+  }
+}
+function showUploadToDir(dirId){
+  document.getElementById('uploadDirSelect').value=dirId;
+  document.getElementById('uploadModal').classList.remove('hidden');
+}
+function showRenameDir(dirId){
+  const dir=dirs.find(d=>d.id===dirId);
+  if(dir){
+    document.getElementById('renameDirId').value=dirId;
+    document.getElementById('renameDirInput').value=dir.name;
+    document.getElementById('renameDirModal').classList.remove('hidden');
+  }
+}
+function doRenameDir(){
+  const id=parseInt(document.getElementById('renameDirId').value);
+  const name=document.getElementById('renameDirInput').value.trim();
+  if(name){
+    const dir=dirs.find(d=>d.id===id);
+    if(dir){dir.name=name;renderTree();showToast('目录重命名成功');}
+  }
+  document.getElementById('renameDirModal').classList.add('hidden');
+}
+function deleteDir(dirId){
+  const dir=dirs.find(d=>d.id===dirId);
+  if(dir&&confirm('确定要删除目录"'+dir.name+'"吗？目录下的文档也将被删除。')){
+    docs.splice(0,docs.length,...docs.filter(d=>d.dir!==dirId));
+    const idx=dirs.findIndex(d=>d.id===dirId);
+    if(idx>-1)dirs.splice(idx,1);
+    if(currentDoc&&currentDoc.dir===dirId){currentDoc=null;renderDocView();}
+    renderTree();
+    showToast('目录已删除');
+  }
+}
+function filterType(t){showToast('筛选功能：'+t)}
+function filterBuilt(t){showToast('筛选：'+t)}
+
+// ---- Init ----
+renderTree();
+renderDocView();
+showPage('docs');
+
+// ==================== QA - 智能问答 ====================
+// QA 知识库数据
+const qaKnowledge = {
+  '资本充足率': {
+    answer: `根据《商业银行资本管理办法》，商业银行资本充足率监管要求如下：
+
+1. **核心一级资本充足率** ≥ 7.5%
+2. **一级资本充足率** ≥ 8.5%
+3. **资本充足率** ≥ 10.5%
+
+其中，系统重要性银行还需满足附加资本要求：
+- 全球系统重要性银行：附加资本 1%-3.5%
+- 国内系统重要性银行：附加资本 1%
+
+资本充足率的计算公式为：
+资本充足率 = 总资本 / 风险加权资产 × 100%`,
+    keywords: ['资本充足率', '核心一级资本', '风险加权资产', '系统重要性银行'],
+    entities: ['商业银行', '资本充足率', '核心一级资本', '一级资本', '风险加权资产', '银保监会', '系统重要性银行'],
+    context: [
+      {s: '商业银行', r: '需满足', t: '资本充足率'},
+      {s: '资本管理办法', r: '制定', t: '资本充足率'},
+      {s: '资本充足率', r: '包含', t: '核心一级资本'},
+      {s: '资本充足率', r: '包含', t: '一级资本'},
+      {s: '系统重要性银行', r: '需满足', t: '附加资本要求'},
+      {s: '银保监会', r: '监管', t: '商业银行'}
+    ]
+  },
+  '流动性': {
+    answer: `流动性风险监管指标主要包括：
+
+1. **流动性覆盖率（LCR）** ≥ 100%
+   - 计算公式：优质流动性资产储备 / 未来30日净现金流出
+
+2. **净稳定资金比例（NSFR）** ≥ 100%
+   - 计算公式：可用的稳定资金 / 业务所需的稳定资金
+
+3. **流动性比例** ≥ 25%
+   - 计算公式：流动性资产余额 / 流动性负债余额
+
+这些指标旨在确保商业银行具有充足的优质流动性资产。`,
+    keywords: ['流动性覆盖率', '净稳定资金比例', '流动性比例', '优质流动性资产'],
+    entities: ['商业银行', '流动性覆盖率', '净稳定资金比例', '流动性比例', '优质流动性资产'],
+    context: [
+      {s: '商业银行', r: '需满足', t: '流动性覆盖率'},
+      {s: '商业银行', r: '需满足', t: '净稳定资金比例'},
+      {s: '流动性覆盖率', r: '计算方式', t: '优质流动性资产'}
+    ]
+  },
+  '反洗钱': {
+    answer: `金融机构反洗钱合规要求包括：
+
+1. **客户身份识别（KYC）**
+   - 建立客户身份识别制度
+   - 核对并登记客户身份信息
+
+2. **大额和可疑交易报告**
+   - 大额交易报告：单笔或当日累计人民币5万元以上
+   - 可疑交易报告：发现或有合理理由怀疑涉及洗钱
+
+3. **客户尽职调查（CDD）**
+   - 持续识别和重新识别客户身份
+   - 评估客户洗钱风险等级`,
+    keywords: ['反洗钱', 'KYC', '可疑交易报告', '客户尽职调查'],
+    entities: ['金融机构', '反洗钱', '客户身份识别', '可疑交易报告', '客户尽职调查'],
+    context: [
+      {s: '金融机构', r: '需满足', t: '反洗钱'},
+      {s: '反洗钱', r: '包含', t: '客户身份识别'},
+      {s: '反洗钱', r: '包含', t: '可疑交易报告'}
+    ]
+  },
+  '系统重要性银行': {
+    answer: `系统重要性银行是指其经营中断或失败可能对金融体系和经济活动造成严重影响的银行。
+
+**附加监管要求：**
+
+1. **附加资本要求**
+   - 全球系统重要性银行：1%-3.5%（分五档）
+   - 国内系统重要性银行：1%
+
+2. **恢复和处置计划**
+   - 制定恢复计划：确保在财务困难时能够恢复正常运营
+   - 制定处置计划：确保在无法恢复时能够有序处置
+
+3. **总损失吸收能力（TLAC）**
+   - 全球系统重要性银行需满足TLAC要求`,
+    keywords: ['系统重要性银行', '附加资本', '恢复处置计划', 'TLAC'],
+    entities: ['系统重要性银行', '附加资本要求', '恢复计划', '处置计划', '总损失吸收能力'],
+    context: [
+      {s: '系统重要性银行', r: '需满足', t: '附加资本要求'},
+      {s: '系统重要性银行', r: '需满足', t: '恢复计划'},
+      {s: '系统重要性银行', r: '需满足', t: '处置计划'}
+    ]
+  }
+};
+
+// QA 状态
+let qaSessions = JSON.parse(localStorage.getItem('qa_sessions') || '[]');
+let qaCurrentSessionId = null;
+
+function qaInit() {
+  if (qaSessions.length === 0) {
+    qaCreateSession();
+  } else {
+    qaCurrentSessionId = qaSessions[0].id;
+    qaRenderSessionList();
+    qaLoadSession(qaCurrentSessionId);
+  }
+}
+
+function qaCreateSession() {
+  const id = Date.now().toString();
+  const session = {
+    id,
+    name: '会话-' + Math.floor(Math.random() * 10000),
+    time: new Date().toLocaleString('zh-CN'),
+    messages: []
+  };
+  qaSessions.unshift(session);
+  qaCurrentSessionId = id;
+  localStorage.setItem('qa_sessions', JSON.stringify(qaSessions));
+  qaRenderSessionList();
+  qaClearMessages();
+  document.getElementById('qaChatTitle').textContent = session.name;
+}
+
+function qaLoadSession(id) {
+  qaCurrentSessionId = id;
+  const session = qaSessions.find(s => s.id === id);
+  if (!session) return;
+  document.getElementById('qaChatTitle').textContent = session.name;
+  qaRenderSessionList();
+  
+  // 检查是否有检索结果需要显示
+  const lastWithRetrieval = session.messages.filter(m => m.retrieval).pop();
+  
+  if (session.messages.length === 0) {
+    qaShowWelcome();
+    // 隐藏检索面板
+    document.getElementById('qaRetrievalPanel').style.display = 'none';
+  } else {
+    const msgsEl = document.getElementById('qaMessages');
+    msgsEl.innerHTML = '';
+    session.messages.forEach(msg => {
+      qaAppendMessage(msg.content, msg.type, msg.retrieval, false);
+    });
+    // 如果有检索数据，显示右侧面板
+    if (lastWithRetrieval && lastWithRetrieval.retrieval) {
+      qaUpdateRetrievalPanel(lastWithRetrieval.retrieval);
+    } else {
+      document.getElementById('qaRetrievalPanel').style.display = 'none';
+    }
+  }
+}
+
+function qaRenderSessionList() {
+  const list = document.getElementById('qaSessionList');
+  list.innerHTML = qaSessions.map(s => `
+    <div onclick="qaLoadSession('${s.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;margin-bottom:4px;transition:background 0.15s;${s.id === qaCurrentSessionId ? 'background:#e6f4ff' : ''}" onmouseover="if('${s.id}'!==qaCurrentSessionId)this.style.background='#f5f5f5'" onmouseout="if('${s.id}'!==qaCurrentSessionId)this.style.background=''">
+      <div style="width:28px;height:28px;border-radius:6px;background:${s.id === qaCurrentSessionId ? '#1677ff' : '#f0f2f5'};color:${s.id === qaCurrentSessionId ? '#fff' : '#595959'};display:flex;align-items:center;justify-content:center;font-size:12px">💬</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:#1a1a1a;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.name}</div>
+        <div style="font-size:10px;color:#999;margin-top:2px">${s.time}</div>
+      </div>
+      <div style="display:flex;gap:2px;opacity:0.6">
+        <span onclick="event.stopPropagation();qaRenameSession('${s.id}')" style="padding:4px;cursor:pointer;font-size:11px;color:#999" title="重命名">✎</span>
+        <span onclick="event.stopPropagation();qaDeleteSession('${s.id}')" style="padding:4px;cursor:pointer;font-size:11px;color:#999" title="删除">🗑</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function qaRenameSession(id) {
+  const session = qaSessions.find(s => s.id === id);
+  if (!session) return;
+  const newName = prompt('请输入新名称:', session.name);
+  if (newName && newName.trim()) {
+    session.name = newName.trim();
+    localStorage.setItem('qa_sessions', JSON.stringify(qaSessions));
+    qaRenderSessionList();
+    if (id === qaCurrentSessionId) {
+      document.getElementById('qaChatTitle').textContent = session.name;
+    }
+  }
+}
+
+function qaDeleteSession(id) {
+  if (!confirm('确定要删除这个会话吗？')) return;
+  qaSessions = qaSessions.filter(s => s.id !== id);
+  localStorage.setItem('qa_sessions', JSON.stringify(qaSessions));
+  if (qaSessions.length === 0) {
+    qaCreateSession();
+  } else {
+    qaLoadSession(qaSessions[0].id);
+  }
+}
+
+function qaClearSession() {
+  const session = qaSessions.find(s => s.id === qaCurrentSessionId);
+  if (session) {
+    session.messages = [];
+    localStorage.setItem('qa_sessions', JSON.stringify(qaSessions));
+    qaShowWelcome();
+    showToast('会话已清空');
+  }
+}
+
+function qaExportSession() {
+  const session = qaSessions.find(s => s.id === qaCurrentSessionId);
+  if (!session || session.messages.length === 0) {
+    showToast('当前会话没有内容可导出');
+    return;
+  }
+  const data = JSON.stringify(session, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = session.name + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('会话已导出');
+}
+
+function qaShowWelcome() {
+  document.getElementById('qaMessages').innerHTML = `
+    <div id="qaWelcome" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center">
+      <div style="width:56px;height:56px;border-radius:50%;background:#e6f4ff;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px">🤖</div>
+      <div style="font-size:18px;font-weight:500;color:#1a1a1a;margin-bottom:8px">欢迎使用金融监管智能问答系统</div>
+      <div style="font-size:14px;color:#8c8c8c;margin-bottom:24px;max-width:400px;line-height:1.6">基于知识图谱和大语言模型，为您提供专业的金融监管知识问答服务</div>
+      <div style="width:100%;max-width:500px;display:flex;flex-direction:column;gap:8px;text-align:left">
+        <div onclick="qaAsk('商业银行资本充足率的要求是什么？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+          <span style="font-size:16px">🏦</span><span style="font-size:14px;color:#1a1a1a">商业银行资本充足率的要求是什么？</span>
+        </div>
+        <div onclick="qaAsk('流动性风险监管指标有哪些？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+          <span style="font-size:16px">📊</span><span style="font-size:14px;color:#1a1a1a">流动性风险监管指标有哪些？</span>
+        </div>
+        <div onclick="qaAsk('反洗钱合规要求是什么？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+          <span style="font-size:16px">🔒</span><span style="font-size:14px;color:#1a1a1a">反洗钱合规要求是什么？</span>
+        </div>
+        <div onclick="qaAsk('系统重要性银行的附加监管要求？')" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f9fc;border-radius:8px;cursor:pointer;border:0.5px solid transparent;transition:all 0.15s" onmouseover="this.style.background='#e6f4ff';this.style.borderColor='#1677ff'" onmouseout="this.style.background='#f8f9fc';this.style.borderColor='transparent'">
+          <span style="font-size:16px">⭐</span><span style="font-size:14px;color:#1a1a1a">系统重要性银行的附加监管要求？</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function qaClearMessages() {
+  qaShowWelcome();
+  // 隐藏检索面板
+  document.getElementById('qaRetrievalPanel').style.display = 'none';
+}
+
+function qaSend() {
+  const input = document.getElementById('qaInput');
+  const question = input.value.trim();
+  if (!question) return;
+  qaAsk(question);
+  input.value = '';
+}
+
+function qaAsk(question) {
+  const msgsEl = document.getElementById('qaMessages');
+  const welcome = document.getElementById('qaWelcome');
+  if (welcome) welcome.remove();
+
+  qaAppendMessage(question, 'user', null, true);
+
+  const loadingId = 'qa-loading-' + Date.now();
+  qaAppendMessage('正在检索知识图谱...', 'ai', null, true, loadingId);
+
+  setTimeout(() => {
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+    const result = qaFindAnswer(question);
+    qaAppendMessage(result.answer, 'ai', result, true);
+    qaUpdateRetrievalPanel(result);
+  }, 1200);
+}
+
+function qaFindAnswer(question) {
+  const lowerQ = question.toLowerCase();
+  for (const [key, value] of Object.entries(qaKnowledge)) {
+    if (lowerQ.includes(key)) return value;
+  }
+  return {
+    answer: `我正在分析您的问题"${question}"。根据知识图谱中的相关信息，建议您使用更具体的关键词，如"资本充足率"、"流动性风险"等。`,
+    keywords: ['金融监管', '知识图谱'],
+    entities: ['商业银行', '银保监会'],
+    context: [{s: '商业银行', r: '监管', t: '银保监会'}]
+  };
+}
+
+function qaAppendMessage(content, type, retrieval = null, save = true, id = null) {
+  const msgsEl = document.getElementById('qaMessages');
+  const welcome = document.getElementById('qaWelcome');
+  if (welcome) welcome.remove();
+
+  const msgEl = document.createElement('div');
+  msgEl.style.cssText = 'display:flex;gap:10px;margin-bottom:16px;animation:fadeIn 0.3s ease';
+  if (type === 'user') msgEl.style.flexDirection = 'row-reverse';
+  if (id) msgEl.id = id;
+
+  let html = '';
+  if (type === 'ai' && retrieval) {
+    html = `<div style="width:32px;height:32px;border-radius:50%;background:#e6f4ff;color:#1677ff;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">AI</div>
+      <div style="max-width:70%">
+        <div style="background:#f8f9fc;border:0.5px solid #e8e8e8;border-radius:0 10px 10px 10px;padding:10px 14px;font-size:13px;line-height:1.7">${content.replace(/\n/g, '<br>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')}</div>
+        <div style="margin-top:10px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:10px">
+          <div style="font-size:11px;color:#1677ff;font-weight:500;margin-bottom:8px">🔍 检索到相关知识</div>
+          <div style="margin-bottom:6px"><span style="font-size:11px;color:#999">关键词：</span><span style="display:inline-flex;gap:4px;flex-wrap:wrap">${retrieval.keywords.map(k => `<span style="padding:2px 6px;background:#fff7e6;color:#d48806;border:0.5px solid #ffd591;border-radius:10px;font-size:10px">${k}</span>`).join('')}</span></div>
+          <div><span style="font-size:11px;color:#999">实体：</span><span style="display:inline-flex;gap:4px;flex-wrap:wrap">${retrieval.entities.map(e => `<span style="padding:2px 6px;background:#f6ffed;color:#389e0d;border:0.5px solid #b7eb8f;border-radius:10px;font-size:10px">${e}</span>`).join('')}</span></div>
+        </div>
+      </div>`;
+  } else {
+    html = `<div style="width:32px;height:32px;border-radius:50%;background:${type === 'ai' ? '#e6f4ff' : '#1677ff'};color:${type === 'ai' ? '#1677ff' : '#fff'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${type === 'ai' ? 'AI' : '我'}</div>
+      <div style="max-width:70%"><div style="background:${type === 'ai' ? '#f8f9fc' : '#1677ff'};border:0.5px solid ${type === 'ai' ? '#e8e8e8' : '#1677ff'};border-radius:${type === 'ai' ? '0 10px 10px 10px' : '10px 0 10px 10px'};padding:10px 14px;font-size:13px;line-height:1.7;color:${type === 'ai' ? '#1a1a1a' : '#fff'}">${content}</div></div>`;
+  }
+
+  msgEl.innerHTML = html;
+  msgsEl.appendChild(msgEl);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+
+  if (save && qaCurrentSessionId) {
+    const session = qaSessions.find(s => s.id === qaCurrentSessionId);
+    if (session) {
+      session.messages.push({type, content, retrieval, time: new Date().toISOString()});
+      localStorage.setItem('qa_sessions', JSON.stringify(qaSessions));
+    }
+  }
+}
+
+function qaUpdateRetrievalPanel(retrieval) {
+  // 显示检索面板
+  const panel = document.getElementById('qaRetrievalPanel');
+  panel.style.display = 'flex';
+  
+  // 显示关键词
+  const keywordsSection = document.getElementById('qaKeywordsSection');
+  const keywordsList = document.getElementById('qaKeywordsList');
+  if (retrieval.keywords && retrieval.keywords.length > 0) {
+    keywordsSection.style.display = 'block';
+    keywordsList.innerHTML = retrieval.keywords.map(k => `<span style="padding:3px 8px;background:#fff7e6;color:#d48806;border:0.5px solid #ffd591;border-radius:12px;font-size:11px">${k}</span>`).join('');
+  } else {
+    keywordsSection.style.display = 'none';
+  }
+  
+  // 显示实体
+  const entitiesSection = document.getElementById('qaEntitiesSection');
+  const entitiesList = document.getElementById('qaEntitiesList');
+  if (retrieval.entities && retrieval.entities.length > 0) {
+    entitiesSection.style.display = 'block';
+    entitiesList.innerHTML = retrieval.entities.map(e => `<span style="padding:3px 8px;background:#f6ffed;color:#389e0d;border:0.5px solid #b7eb8f;border-radius:12px;font-size:11px">${e}</span>`).join('');
+  } else {
+    entitiesSection.style.display = 'none';
+  }
+  
+  document.getElementById('qaKgFullscreenBtn').style.display = 'flex';
+  document.getElementById('qaKgContext').style.display = 'block';
+
+  qaDrawKGViz(retrieval.entities || [], retrieval.context || []);
+
+  const contextList = document.getElementById('qaKgContextList');
+  if (retrieval.context && retrieval.context.length > 0) {
+    contextList.innerHTML = retrieval.context.map(ctx => `<div style="padding:5px 0;border-bottom:0.5px solid #f5f5f5;font-size:11px;color:#595959;line-height:1.5"><span style="color:#1677ff;font-weight:500">${ctx.s}</span><span style="color:#999"> —${ctx.r}→ </span><span style="color:#1677ff;font-weight:500">${ctx.t}</span></div>`).join('');
+  }
+}
+
+// 知识图谱动画状态
+let kgAnimationId = null;
+let kgNodeMap = new Map();
+let kgEdges = [];
+let kgContainerWidth = 280;
+let kgContainerHeight = 140;
+
+function qaDrawKGViz(entities, context) {
+  const svg = document.getElementById('qaKgVizSvg');
+  const container = svg.parentElement;
+  kgContainerWidth = container.clientWidth || 280;
+  kgContainerHeight = container.clientHeight || 140;
+  svg.setAttribute('viewBox', `0 0 ${kgContainerWidth} ${kgContainerHeight}`);
+
+  const colors = {
+    '监管机构': '#1677ff', 
+    '法规文件': '#f5222d', 
+    '金融机构': '#52c41a', 
+    '监管指标': '#fa8c16', 
+    '风险类别': '#722ed1', 
+    '合规要求': '#fadb14',
+    '处罚事项': '#eb2f96',
+    '报告要求': '#13c2c2'
+  };
+
+  // 收集所有唯一节点
+  const allNodes = new Set();
+  entities.forEach(e => allNodes.add(e));
+  context.forEach(ctx => {
+    allNodes.add(ctx.s);
+    allNodes.add(ctx.t);
+  });
+
+  // 自动推断节点类型
+  const nodeTypes = {};
+  allNodes.forEach(name => {
+    if (name.includes('银行') || name.includes('机构') || name.includes('监会')) {
+      nodeTypes[name] = '监管机构';
+    } else if (name.includes('率') || name.includes('指标') || name.includes('比例')) {
+      nodeTypes[name] = '监管指标';
+    } else if (name.includes('法') || name.includes('条例') || name.includes('规定') || name.includes('协议')) {
+      nodeTypes[name] = '法规文件';
+    } else if (name.includes('风险') || name.includes('风险')) {
+      nodeTypes[name] = '风险类别';
+    } else if (name.includes('要求') || name.includes('合规') || name.includes('义务')) {
+      nodeTypes[name] = '合规要求';
+    } else {
+      nodeTypes[name] = '金融机构';
+    }
+  });
+
+  // 初始化节点位置（环形分布）
+  kgNodeMap.clear();
+  const nodeCount = allNodes.size;
+  const padding = 20;
+  const centerX = kgContainerWidth / 2;
+  const centerY = kgContainerHeight / 2;
+  let index = 0;
+  allNodes.forEach(name => {
+    const angle = (index / nodeCount) * Math.PI * 2 - Math.PI / 2;
+    const radius = Math.min(kgContainerWidth, kgContainerHeight) / 2 - padding - 15;
+    kgNodeMap.set(name, {
+      id: name,
+      type: nodeTypes[name] || '金融机构',
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      targetX: 0,
+      targetY: 0,
+      settled: false
+    });
+    index++;
+  });
+
+  // 保存边关系
+  kgEdges = context.map(ctx => ({
+    s: ctx.s,
+    t: ctx.t,
+    r: ctx.r
+  }));
+
+  // 停止之前的动画
+  if (kgAnimationId) {
+    cancelAnimationFrame(kgAnimationId);
+    kgAnimationId = null;
+  }
+
+  // 开始动画循环
+  let iteration = 0;
+  const maxIterations = 200; // 逐渐稳定
+
+  function animate() {
+    const nodes = Array.from(kgNodeMap.values());
+    
+    // 力导向模拟
+    // 1. 节点间排斥力
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const minDist = 45;
+        if (dist < minDist) {
+          const f = (minDist - dist) / dist * 0.8;
+          a.vx -= dx * f;
+          a.vy -= dy * f;
+          b.vx += dx * f;
+          b.vy += dy * f;
+        }
+      }
+    }
+
+    // 2. 边的吸引力
+    kgEdges.forEach(edge => {
+      const s = kgNodeMap.get(edge.s), t = kgNodeMap.get(edge.t);
+      if (s && t) {
+        const dx = t.x - s.x, dy = t.y - s.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ideal = 60, f = (dist - ideal) / dist * 0.06;
+        s.vx += dx * f;
+        s.vy += dy * f;
+        t.vx -= dx * f;
+        t.vy -= dy * f;
+      }
+    });
+
+    // 3. 中心引力 + 更新位置
+    let totalMovement = 0;
+    kgNodeMap.forEach(node => {
+      // 逐渐减少中心引力，让节点自然分布
+      const centerForce = iteration < 100 ? 0.008 : 0.003;
+      node.vx += (centerX - node.x) * centerForce;
+      node.vy += (centerY - node.y) * centerForce;
+      
+      // 阻尼
+      const damping = iteration < 50 ? 0.85 : 0.92;
+      node.vx *= damping;
+      node.vy *= damping;
+      
+      node.x += node.vx;
+      node.y += node.vy;
+      
+      // 边界约束
+      node.x = Math.max(padding, Math.min(kgContainerWidth - padding, node.x));
+      node.y = Math.max(padding, Math.min(kgContainerHeight - padding, node.y));
+      
+      totalMovement += Math.abs(node.vx) + Math.abs(node.vy);
+    });
+
+    // 渲染
+    renderKGViz(svg, colors);
+
+    // 判断是否稳定或达到最大迭代
+    iteration++;
+    if (totalMovement > 0.5 && iteration < maxIterations) {
+      kgAnimationId = requestAnimationFrame(animate);
+    }
+  }
+
+  // 启动动画
+  kgAnimationId = requestAnimationFrame(animate);
+}
+
+function renderKGViz(svg, colors) {
+  let svgHtml = '';
+  
+  // 绘制边（带动画效果）
+  kgEdges.forEach(edge => {
+    const s = kgNodeMap.get(edge.s), t = kgNodeMap.get(edge.t);
+    if (s && t) {
+      const midX = (s.x + t.x) / 2;
+      const midY = (s.y + t.y) / 2;
+      svgHtml += `<line x1="${s.x.toFixed(1)}" y1="${s.y.toFixed(1)}" x2="${t.x.toFixed(1)}" y2="${t.y.toFixed(1)}" stroke="#d0d0d0" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>`;
+      svgHtml += `<text x="${midX.toFixed(1)}" y="${(midY - 4).toFixed(1)}" text-anchor="middle" font-size="8" fill="#999">${edge.r}</text>`;
+    }
+  });
+
+  // 绘制节点
+  kgNodeMap.forEach(node => {
+    const color = colors[node.type] || '#1677ff';
+    const r = 10;
+    // 节点主体
+    svgHtml += `<circle cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${r}" fill="${color}" fill-opacity="0.25" stroke="${color}" stroke-width="1.5"/>`;
+    // 节点光晕效果
+    svgHtml += `<circle cx="${node.x.toFixed(1)}" cy="${node.y.toFixed(1)}" r="${r + 2}" fill="none" stroke="${color}" stroke-width="0.5" stroke-opacity="0.3"/>`;
+    // 文字
+    const label = node.id.length > 5 ? node.id.slice(0, 5) + '..' : node.id;
+    svgHtml += `<text x="${node.x.toFixed(1)}" y="${(node.y + 3).toFixed(1)}" text-anchor="middle" font-size="9" fill="#333" font-weight="500">${label}</text>`;
+  });
+  
+  svg.innerHTML = svgHtml;
+}
+
+function qaOpenFullscreen() {
+  alert('全屏功能：可在此处打开模态框显示完整图谱');
+}
+</script>
+</body>
+</html>

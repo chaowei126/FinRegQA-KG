@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用户管理 - 金融监管知识图谱系统</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('index')">首页</div>
+  <div class="nav-item" onclick="navigateTo('qa')">智能问答</div>
+  <div class="nav-item kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="navigateTo('docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item active" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <div class="content" style="background:#f0f2f5">
+    <div class="kg-page" style="padding:20px">
+      <div class="kg-page-header">
+        <div class="kg-page-title">用户管理</div>
+        <div class="kg-page-sub">管理系统用户和权限配置</div>
+        <div class="kg-header-actions">
+          <button class="btn btn-primary" onclick="showAddUserModal()">+ 新增用户</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
+        <div class="stat-card"><div class="num">4</div><div class="lbl">用户总数</div></div>
+        <div class="stat-card"><div class="num">3</div><div class="lbl">活跃用户</div></div>
+        <div class="stat-card"><div class="num">1</div><div class="lbl">停用用户</div></div>
+      </div>
+
+      <div class="table-section">
+        <div class="table-header">
+          <div class="table-header-title">用户列表</div>
+          <div class="table-filters">
+            <select class="filter-select">
+              <option value="">全部角色</option>
+              <option value="admin">管理员</option>
+              <option value="analyst">分析师</option>
+              <option value="compliance">合规专员</option>
+              <option value="viewer">访客</option>
+            </select>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>用户</th>
+              <th>角色</th>
+              <th>邮箱</th>
+              <th>状态</th>
+              <th>最后登录</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- 角色说明 -->
+      <div class="tag-section" style="margin-top:20px">
+        <div class="tag-section-title">角色权限说明</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+          <div style="padding:12px;background:#f8f8f8;border-radius:6px">
+            <div style="font-size:13px;font-weight:500;color:#1677ff;margin-bottom:4px">管理员</div>
+            <div style="font-size:12px;color:#595959">完整系统访问权限<br>用户管理、权限配置</div>
+          </div>
+          <div style="padding:12px;background:#f8f8f8;border-radius:6px">
+            <div style="font-size:13px;font-weight:500;color:#52c41a;margin-bottom:4px">分析师</div>
+            <div style="font-size:12px;color:#595959">文档管理、图谱构建<br>问答、数据导出</div>
+          </div>
+          <div style="padding:12px;background:#f8f8f8;border-radius:6px">
+            <div style="font-size:13px;font-weight:500;color:#fa8c16;margin-bottom:4px">合规专员</div>
+            <div style="font-size:12px;color:#595959">文档查看、图谱可视化<br>问答、报告生成</div>
+          </div>
+          <div style="padding:12px;background:#f8f8f8;border-radius:6px">
+            <div style="font-size:13px;font-weight:500;color:#8c8c8c;margin-bottom:4px">访客</div>
+            <div style="font-size:12px;color:#595959">只读访问<br>问答功能</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal-overlay hidden" id="addUserModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">新增用户</div>
+      <div class="modal-close" onclick="document.getElementById('addUserModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">用户名</div>
+        <input class="form-input" id="addUserName" placeholder="请输入用户名" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">邮箱</div>
+        <input class="form-input" id="addUserEmail" type="email" placeholder="请输入邮箱" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">角色</div>
+        <select class="form-select" id="addUserRole">
+          <option value="viewer">访客</option>
+          <option value="compliance">合规专员</option>
+          <option value="analyst">分析师</option>
+          <option value="admin">管理员</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('addUserModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doAddUser()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+const roleLabels = {
+  admin: { label: '管理员', color: '#1677ff' },
+  analyst: { label: '分析师', color: '#52c41a' },
+  compliance: { label: '合规专员', color: '#fa8c16' },
+  viewer: { label: '访客', color: '#8c8c8c' }
+};
+
+let localUsers = JSON.parse(JSON.stringify(users));
+
+function renderUserTable() {
+  const tbody = document.getElementById('userTableBody');
+  tbody.innerHTML = localUsers.map(u => {
+    const role = roleLabels[u.role] || { label: u.role, color: '#8c8c8c' };
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${role.color}22;color:${role.color};display:flex;align-items:center;justify-content:center;font-size:12px">${u.name.charAt(0)}</div>
+          <span style="font-weight:500">${u.name}</span>
+        </div>
+      </td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${role.color}22;color:${role.color}">${role.label}</span></td>
+      <td style="color:#8c8c8c">${u.email}</td>
+      <td><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:${u.status === 'active' ? '#f6ffed' : '#f5f5f5'};color:${u.status === 'active' ? '#52c41a' : '#8c8c8c'}">${u.status === 'active' ? '● 活跃' : '○ 停用'}</span></td>
+      <td style="color:#8c8c8c">${u.lastLogin}</td>
+      <td>
+        <span class="op-link">编辑</span>
+        <span class="op-link" onclick="toggleUserStatus(${u.id})">${u.status === 'active' ? '停用' : '启用'}</span>
+        <span class="op-link danger" onclick="deleteUser(${u.id})">删除</span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function showAddUserModal() {
+  document.getElementById('addUserName').value = '';
+  document.getElementById('addUserEmail').value = '';
+  document.getElementById('addUserRole').value = 'viewer';
+  document.getElementById('addUserModal').classList.remove('hidden');
+}
+
+function doAddUser() {
+  const name = document.getElementById('addUserName').value.trim();
+  const email = document.getElementById('addUserEmail').value.trim();
+  const role = document.getElementById('addUserRole').value;
+  if (!name || !email) { showToast('请填写完整信息'); return; }
+
+  const newId = Math.max(...localUsers.map(u => u.id)) + 1;
+  localUsers.push({
+    id: newId, name, email, role, status: 'active',
+    lastLogin: new Date().toISOString().slice(0, 16).replace('T', ' ')
+  });
+  renderUserTable();
+  document.getElementById('addUserModal').classList.add('hidden');
+  showToast('用户添加成功');
+}
+
+function toggleUserStatus(id) {
+  const user = localUsers.find(u => u.id === id);
+  if (user) {
+    user.status = user.status === 'active' ? 'inactive' : 'active';
+    renderUserTable();
+    showToast(`用户已${user.status === 'active' ? '启用' : '停用'}`);
+  }
+}
+
+function deleteUser(id) {
+  if (confirm('确定要删除该用户吗？')) {
+    localUsers = localUsers.filter(u => u.id !== id);
+    renderUserTable();
+    showToast('用户已删除');
+  }
+}
+
+// 初始化
+renderUserTable();
+</script>
+</body>
+</html>

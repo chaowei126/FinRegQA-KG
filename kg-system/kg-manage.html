@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图谱管理 - 金融监管知识图谱系统</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .kg-manage-layout {display:flex;height:100%}
+  .kg-manage-sidebar {width:200px;background:#fff;border-right:0.5px solid #e0e0e0;padding:16px;flex-shrink:0}
+  .kg-manage-sidebar-title {font-size:13px;font-weight:500;color:#1a1a1a;margin-bottom:12px}
+  .kg-manage-menu-item {padding:8px 12px;border-radius:6px;font-size:13px;color:#595959;cursor:pointer;margin-bottom:4px;transition:all 0.15s}
+  .kg-manage-menu-item:hover {background:#f5f5f5;color:#1a1a1a}
+  .kg-manage-menu-item.active {background:#e6f4ff;color:#1677ff;font-weight:500}
+  .kg-manage-content {flex:1;overflow-y:auto;padding:20px}
+  .tag-chip {display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:12px;font-size:11px;cursor:pointer;transition:all 0.15s;border:0.5px solid #e0e0e0}
+  .tag-chip:hover {border-color:#1677ff}
+  .tag-chip.active {background:#e6f4ff;border-color:#91caff}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('index')">首页</div>
+  <div class="nav-item" onclick="navigateTo('qa')">智能问答</div>
+  <div class="nav-item active kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="navigateTo('docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <div class="kg-manage-layout">
+    <!-- Sidebar -->
+    <div class="kg-manage-sidebar">
+      <div class="kg-manage-sidebar-title">图谱管理</div>
+      <div class="kg-manage-menu-item active" onclick="switchManageTab('overview', this)">📊 图谱概览</div>
+      <div class="kg-manage-menu-item" onclick="switchManageTab('nodes', this)">🔵 节点管理</div>
+      <div class="kg-manage-menu-item" onclick="switchManageTab('relations', this)">🔗 关系管理</div>
+      <div class="kg-manage-menu-item" onclick="switchManageTab('triples', this)">📝 三元组管理</div>
+      <div class="kg-manage-menu-item" onclick="switchManageTab('types', this)">🏷️ 类型管理</div>
+    </div>
+
+    <!-- Content -->
+    <div class="kg-manage-content" id="manageContent">
+      <!-- Overview -->
+      <div id="tab-overview">
+        <div class="kg-page-header">
+          <div class="kg-page-title">知识图谱概览</div>
+          <div class="kg-page-sub">查看全局知识图谱的统计信息和结构分布</div>
+          <div class="kg-header-actions">
+            <button class="btn btn-primary" onclick="window.open('kg-vis.html', '_blank')">🔍 打开可视化</button>
+            <button class="btn btn-outline">📥 导出图谱</button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card"><div class="num" id="statNodes">89</div><div class="lbl">节点总数</div></div>
+          <div class="stat-card"><div class="num" id="statEdges">78</div><div class="lbl">关系总数</div></div>
+          <div class="stat-card"><div class="num">12</div><div class="lbl">节点类型</div></div>
+          <div class="stat-card"><div class="num">14</div><div class="lbl">关系类型</div></div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">节点类型分布</div>
+          <div class="tag-cloud" id="nodeTypeCloud"></div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">关系类型分布</div>
+          <div class="tag-cloud" id="relTypeCloud"></div>
+        </div>
+      </div>
+
+      <!-- Nodes -->
+      <div id="tab-nodes" class="hidden">
+        <div class="kg-page-header">
+          <div class="kg-page-title">节点管理</div>
+          <div class="kg-page-sub">查看、编辑和管理所有知识图谱节点</div>
+          <div class="kg-header-actions">
+            <button class="btn btn-primary" onclick="showAddNodeModal()">+ 新增节点</button>
+            <button class="btn btn-outline">📥 批量导入</button>
+            <button class="btn btn-outline">📤 批量导出</button>
+          </div>
+        </div>
+
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-header-title">节点列表</div>
+            <div class="table-filters">
+              <input class="search-input" style="width:160px;height:28px" placeholder="搜索节点名称" id="nodeSearchInput" />
+              <select class="filter-select" id="nodeTypeFilter">
+                <option value="">全部类型</option>
+              </select>
+              <button class="btn btn-outline" style="padding:4px 8px;font-size:11px" onclick="searchNodes()">搜索</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>节点名称</th><th>节点类型</th><th>关联关系数</th><th>来源文档</th><th>操作</th></tr></thead>
+            <tbody id="nodeTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Relations -->
+      <div id="tab-relations" class="hidden">
+        <div class="kg-page-header">
+          <div class="kg-page-title">关系管理</div>
+          <div class="kg-page-sub">查看和管理所有知识图谱关系</div>
+          <div class="kg-header-actions">
+            <button class="btn btn-primary" onclick="showAddTripleModal()">+ 新增关系</button>
+          </div>
+        </div>
+
+        <div class="tag-section">
+          <div class="tag-section-title">关系类型统计</div>
+          <div id="relStatsCloud"></div>
+        </div>
+
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-header-title">关系列表</div>
+            <div class="table-filters">
+              <select class="filter-select" id="relTypeFilter">
+                <option value="">全部类型</option>
+              </select>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>关系类型</th><th>关系数量</th><th>示例</th><th>操作</th></tr></thead>
+            <tbody id="relTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Triples -->
+      <div id="tab-triples" class="hidden">
+        <div class="kg-page-header">
+          <div class="kg-page-title">三元组管理</div>
+          <div class="kg-page-sub">以头实体-关系-尾实体形式管理知识图谱</div>
+          <div class="kg-header-actions">
+            <button class="btn btn-primary" onclick="showAddTripleModal()">+ 新增三元组</button>
+          </div>
+        </div>
+
+        <div class="table-section">
+          <div class="table-header">
+            <div class="table-header-title">三元组列表</div>
+            <div class="table-filters">
+              <input class="search-input" style="width:120px;height:28px" placeholder="头实体" id="filterHeadName" />
+              <select class="filter-select" style="width:100px" id="filterRelType"><option value="">关系</option></select>
+              <input class="search-input" style="width:120px;height:28px" placeholder="尾实体" id="filterTailName" />
+              <button class="btn btn-outline" style="padding:4px 8px;font-size:11px" onclick="filterTriples()">筛选</button>
+              <button class="btn btn-outline" style="padding:4px 8px;font-size:11px" onclick="resetTripleFilter()">重置</button>
+            </div>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>头实体</th><th>头类型</th><th>关系</th><th>尾实体</th><th>尾类型</th><th>操作</th></tr></thead>
+            <tbody id="tripleTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Types -->
+      <div id="tab-types" class="hidden">
+        <div class="kg-page-header">
+          <div class="kg-page-title">类型管理</div>
+          <div class="kg-page-sub">管理系统中的节点类型和关系类型</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="table-section">
+            <div class="table-header">
+              <div class="table-header-title">节点类型</div>
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px">+ 添加</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>类型名称</th><th>颜色</th><th>节点数</th><th>操作</th></tr></thead>
+              <tbody id="nodeTypeTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-section">
+            <div class="table-header">
+              <div class="table-header-title">关系类型</div>
+              <button class="btn btn-primary" style="padding:4px 8px;font-size:11px">+ 添加</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>关系名称</th><th>关系数</th><th>示例</th><th>操作</th></tr></thead>
+              <tbody id="relTypeTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add Triple Modal -->
+<div class="modal-overlay hidden" id="addTripleModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">新增三元组</div>
+      <div class="modal-close" onclick="document.getElementById('addTripleModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">头实体名称</div>
+        <input class="form-input" id="addTripleHeadName" placeholder="请输入头实体名称" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">头实体类型</div>
+        <select class="form-select" id="addTripleHeadType">
+          <option value="">选择类型</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">关系类型</div>
+        <select class="form-select" id="addTripleRel">
+          <option value="">选择关系</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">尾实体名称</div>
+        <input class="form-input" id="addTripleTailName" placeholder="请输入尾实体名称" />
+      </div>
+      <div class="form-group">
+        <div class="form-label">尾实体类型</div>
+        <select class="form-select" id="addTripleTailType">
+          <option value="">选择类型</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('addTripleModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doAddTriple()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+let manageTab = 'overview';
+
+// 计算统计数据
+const nodeTypeCounts = {};
+const relTypeCounts = {};
+const nodeRelationCounts = {};
+
+KG_NODES.forEach(n => { nodeTypeCounts[n.type] = (nodeTypeCounts[n.type] || 0) + 1; });
+KG_EDGES.forEach(e => { relTypeCounts[e.r] = (relTypeCounts[e.r] || 0) + 1; });
+KG_EDGES.forEach(e => {
+  nodeRelationCounts[e.s] = (nodeRelationCounts[e.s] || 0) + 1;
+  nodeRelationCounts[e.t] = (nodeRelationCounts[e.t] || 0) + 1;
+});
+
+// 初始化类型下拉框
+function initTypeSelects() {
+  const nodeTypeOptions = Object.keys(nodeColors).map(t => `<option value="${t}">${t}</option>`).join('');
+  document.querySelectorAll('[id$="HeadType"], [id$="TailType"], #nodeTypeFilter').forEach(el => {
+    if (el.tagName === 'SELECT') el.innerHTML = '<option value="">全部类型</option>' + nodeTypeOptions;
+  });
+
+  const relOptions = relationTypes.map(r => `<option value="${r}">${r}</option>`).join('');
+  document.querySelectorAll('[id$="Rel"], #filterRelType, #relTypeFilter').forEach(el => {
+    if (el.tagName === 'SELECT') el.innerHTML = '<option value="">全部类型</option>' + relOptions;
+  });
+}
+
+function switchManageTab(tab, el) {
+  manageTab = tab;
+  document.querySelectorAll('.kg-manage-menu-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('[id^="tab-"]').forEach(t => t.classList.add('hidden'));
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+
+  if (tab === 'nodes') renderNodeTable();
+  if (tab === 'relations') renderRelTable();
+  if (tab === 'triples') renderTripleTable();
+  if (tab === 'types') renderTypeTables();
+  if (tab === 'overview') renderOverview();
+}
+
+function renderOverview() {
+  // 节点类型云
+  document.getElementById('nodeTypeCloud').innerHTML = Object.entries(nodeTypeCounts).map(([type, count]) =>
+    `<span class="tag-chip" style="background:${nodeColors[type]}22;border-color:${nodeColors[type]}55;color:${nodeColors[type]}">● ${type} (${count})</span>`
+  ).join('');
+
+  // 关系类型云
+  const relColors = ['#1677ff', '#52c41a', '#fa8c16', '#722ed1', '#eb2f96', '#13c2c2', '#fadb14'];
+  document.getElementById('relTypeCloud').innerHTML = Object.entries(relTypeCounts).map(([rel, count], i) =>
+    `<span class="tag-chip">${rel} (${count})</span>`
+  ).join('');
+}
+
+function renderNodeTable() {
+  const search = document.getElementById('nodeSearchInput')?.value || '';
+  const typeFilter = document.getElementById('nodeTypeFilter')?.value || '';
+  const filtered = KG_NODES.filter(n => {
+    if (search && !n.id.includes(search)) return false;
+    if (typeFilter && n.type !== typeFilter) return false;
+    return true;
+  });
+
+  document.getElementById('nodeTableBody').innerHTML = filtered.map(n => `
+    <tr>
+      <td><span class="node-dot" style="background:${nodeColors[n.type] || '#888'}"></span>${n.id}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[n.type] || '#888'}22;color:${nodeColors[n.type] || '#888'};border:0.5px solid ${nodeColors[n.type] || '#888'}55">${n.type}</span></td>
+      <td>${nodeRelationCounts[n.id] || 0}</td>
+      <td>-</td>
+      <td><span class="op-link">编辑</span><span class="op-link danger">删除</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderRelTable() {
+  document.getElementById('relTableBody').innerHTML = Object.entries(relTypeCounts).map(([rel, count]) => {
+    const example = KG_EDGES.find(e => e.r === rel);
+    return `<tr>
+      <td><span style="background:#f0f0f0;padding:2px 7px;border-radius:10px;font-size:11px">${rel}</span></td>
+      <td>${count}</td>
+      <td style="font-size:12px;color:#8c8c8c">${example ? example.s + ' → ' + example.t : '-'}</td>
+      <td><span class="op-link">查看</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTripleTable() {
+  document.getElementById('tripleTableBody').innerHTML = KG_EDGES.slice(0, 50).map((e, i) => `
+    <tr>
+      <td>${e.s}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[e.sType] || '#888'}22;color:${nodeColors[e.sType] || '#888'}">${e.sType || '未知'}</span></td>
+      <td><span style="background:#f0f0f0;padding:2px 7px;border-radius:10px;font-size:11px">${e.r}</span></td>
+      <td>${e.t}</td>
+      <td><span style="font-size:11px;padding:2px 6px;border-radius:10px;background:${nodeColors[e.tType] || '#888'}22;color:${nodeColors[e.tType] || '#888'}">${e.tType || '未知'}</span></td>
+      <td><span class="op-link">编辑</span><span class="op-link danger">删除</span></td>
+    </tr>
+  `).join('');
+}
+
+function renderTypeTables() {
+  // 节点类型表
+  document.getElementById('nodeTypeTableBody').innerHTML = Object.entries(nodeTypeCounts).map(([type, count]) => `
+    <tr>
+      <td><span class="node-dot" style="background:${nodeColors[type]}"></span>${type}</td>
+      <td><span style="display:inline-block;width:60px;height:20px;background:${nodeColors[type]};border-radius:4px"></span></td>
+      <td>${count}</td>
+      <td><span class="op-link">编辑</span></td>
+    </tr>
+  `).join('');
+
+  // 关系类型表
+  document.getElementById('relTypeTableBody').innerHTML = Object.entries(relTypeCounts).map(([rel, count]) => {
+    const example = KG_EDGES.find(e => e.r === rel);
+    return `<tr>
+      <td>${rel}</td>
+      <td>${count}</td>
+      <td style="font-size:12px;color:#8c8c8c">${example ? example.s + ' → ' + example.t : '-'}</td>
+      <td><span class="op-link">编辑</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function showAddTripleModal() {
+  initTypeSelects();
+  document.getElementById('addTripleModal').classList.remove('hidden');
+}
+
+function doAddTriple() {
+  const s = document.getElementById('addTripleHeadName').value.trim();
+  const o = document.getElementById('addTripleTailName').value.trim();
+  const r = document.getElementById('addTripleRel').value;
+  if (!s || !o || !r) { showToast('请填写完整信息'); return; }
+  document.getElementById('addTripleModal').classList.add('hidden');
+  showToast('三元组添加成功');
+  renderTripleTable();
+}
+
+function filterTriples() { renderTripleTable(); }
+function resetTripleFilter() {
+  ['filterHeadName', 'filterTailName', 'filterRelType'].forEach(id => { if (document.getElementById(id)) document.getElementById(id).value = ''; });
+  renderTripleTable();
+}
+function searchNodes() { renderNodeTable(); }
+
+// 初始化
+initTypeSelects();
+renderOverview();
+</script>
+</body>
+</html>

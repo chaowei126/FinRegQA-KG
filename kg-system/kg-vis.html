@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图谱可视化 - 金融监管知识图谱系统</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .vis-page {flex:1;overflow:hidden;position:relative;background:#f8f9fc}
+  .vis-header {
+    position:absolute;top:0;left:0;right:0;height:48px;
+    background:#fff;border-bottom:0.5px solid #e0e0e0;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 20px;z-index:15
+  }
+  .vis-header-title {font-size:15px;font-weight:500;color:#1a1a1a}
+  .vis-header-actions {display:flex;gap:8px;align-items:center}
+  .vis-filters {
+    position:absolute;top:48px;left:0;right:0;background:#fff;
+    border-bottom:0.5px solid #e0e0e0;padding:10px 20px;
+    z-index:14;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap
+  }
+  .vis-filters-label {font-size:12px;color:#8c8c8c;white-space:nowrap;margin-top:2px}
+  .vis-filters-list {display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .vis-toolbar {
+    position:absolute;top:96px;left:50%;transform:translateX(-50%);
+    display:flex;gap:6px;z-index:10;background:#fff;border-radius:20px;
+    padding:5px 10px;border:0.5px solid #e0e0e0;flex-wrap:wrap;max-width:90%;justify-content:flex-start
+  }
+  .vis-toolbar-select {
+    height:26px;border:0.5px solid #d9d9d9;border-radius:14px;padding:0 10px;
+    font-size:12px;color:#595959;background:#fff;cursor:pointer;outline:none
+  }
+  .vis-toolbar-divider {width:1px;height:20px;background:#e0e0e0;margin:0 6px}
+  .vis-search-box {
+    display:flex;align-items:center;gap:4px;background:#f5f5f5;
+    border-radius:14px;padding:0 10px;height:26px
+  }
+  .vis-search-input {
+    border:none;background:transparent;outline:none;font-size:12px;color:#595959;width:80px
+  }
+  .vis-legend {position:absolute;right:16px;top:150px;background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px 14px;z-index:10;min-width:120px}
+  .vis-node-panel {
+    display:none;position:absolute;right:16px;top:150px;width:210px;
+    background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:14px;z-index:20
+  }
+  .vis-node-panel-title {font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:10px}
+  .vis-svg {width:100%;height:calc(100% - 96px);margin-top:96px}
+  .vis-rel-chip {
+    display:inline-flex;align-items:center;gap:4px;font-size:12px;
+    padding:2px 8px;border-radius:12px;cursor:pointer;
+    border:0.5px solid #e0e0e0;background:#fff;transition:all 0.15s
+  }
+  .vis-rel-chip:hover {border-color:#1677ff;color:#1677ff}
+  .vis-rel-chip.disabled {color:#bfbfbf;opacity:0.6}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('index')">首页</div>
+  <div class="nav-item" onclick="navigateTo('qa')">智能问答</div>
+  <div class="nav-item active kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="navigateTo('docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Vis Page -->
+<div class="vis-page" id="kgVisPage">
+  <!-- Header -->
+  <div class="vis-header">
+    <div class="vis-header-title">金融监管知识图谱可视化</div>
+    <div class="vis-header-actions">
+      <button class="btn btn-primary" style="font-size:12px;padding:5px 14px" onclick="renderVis()">↺ 刷新图谱</button>
+      <button class="btn btn-outline" style="font-size:12px;padding:5px 14px" onclick="resetVisLayout()">⟲ 重置布局</button>
+    </div>
+  </div>
+
+  <!-- Relation Filters -->
+  <div class="vis-filters">
+    <span class="vis-filters-label">关系类型过滤:</span>
+    <div class="vis-filters-list" id="visRelFilter"></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="vis-toolbar">
+    <button class="vis-tool-btn active" onclick="switchVisMode('all', this)">全图</button>
+    <button class="vis-tool-btn" onclick="switchVisMode('doc', this)">按文档</button>
+    <button class="vis-tool-btn" onclick="switchVisMode('type', this)">按类型</button>
+    <button class="vis-tool-btn" onclick="switchVisMode('rel', this)">按关系</button>
+    <button class="vis-tool-btn" id="pauseBtn" onclick="togglePause()">暂停</button>
+    <div class="vis-toolbar-divider"></div>
+    <select class="vis-toolbar-select" id="visLayoutSelect" onchange="changeVisLayout(this.value)">
+      <option value="force">力导向布局</option>
+      <option value="circular">圆形布局</option>
+      <option value="radial">辐射布局</option>
+    </select>
+    <select class="vis-toolbar-select" id="visLimitSelect" onchange="changeVisLimit(this.value)">
+      <option value="50">显示50条</option>
+      <option value="100" selected>显示100条</option>
+      <option value="200">显示200条</option>
+      <option value="all">显示全部</option>
+    </select>
+    <div class="vis-search-box">
+      <span style="font-size:12px">🔍</span>
+      <input class="vis-search-input" id="visSearchInput" type="text" placeholder="搜索节点" onkeydown="if(event.key==='Enter')searchVisNode()" />
+      <select id="visDepthSelect" onchange="searchVisNode()" style="border:none;background:transparent;outline:none;font-size:11px;color:#8c8c8c;cursor:pointer">
+        <option value="1">1级</option>
+        <option value="2" selected>2级</option>
+        <option value="3">3级</option>
+      </select>
+    </div>
+    <button class="vis-tool-btn" onclick="searchVisNode()" style="background:#e6f4ff;color:#1677ff">查找</button>
+  </div>
+
+  <!-- Legend -->
+  <div class="vis-legend" id="kgLegend">
+    <div class="vis-legend-title">节点类型</div>
+  </div>
+
+  <!-- Node Panel -->
+  <div class="vis-node-panel" id="visNodePanel">
+    <div class="vis-node-panel-title">节点详情</div>
+    <div id="visNodeContent"></div>
+    <button onclick="closeVisNodeInfo()" style="margin-top:10px;width:100%;border:0.5px solid #d9d9d9;background:#fff;border-radius:5px;padding:4px;font-size:12px;cursor:pointer;color:#595959">关闭</button>
+  </div>
+
+  <!-- SVG Canvas -->
+  <svg id="visSvg" class="vis-svg"></svg>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// 状态变量
+let visLayout = 'force';
+let visLimit = '100';
+let visSearchNode = '';
+let visDepth = 2;
+let visHighlightNodes = new Set();
+let visRelFilters = {};
+let simRef = null;
+let isPaused = false;
+
+// 初始化关系过滤
+relationTypes.forEach(r => visRelFilters[r] = true);
+
+// 渲染关系类型过滤
+function renderVisRelFilters() {
+  const container = document.getElementById('visRelFilter');
+  container.innerHTML = relationTypes.map(r =>
+    `<span class="vis-rel-chip ${visRelFilters[r] === false ? 'disabled' : ''}" onclick="toggleRelFilter('${r}', this)">
+      <input type="checkbox" ${visRelFilters[r] !== false ? 'checked' : ''} style="width:12px;height:12px">${r}
+    </span>`
+  ).join('');
+}
+
+function toggleRelFilter(rel, el) {
+  visRelFilters[rel] = visRelFilters[rel] === false ? true : false;
+  el.classList.toggle('disabled');
+  el.querySelector('input').checked = visRelFilters[rel] !== false;
+  renderVis();
+}
+
+function switchVisMode(mode, btn) {
+  document.querySelectorAll('.vis-tool-btn').forEach(b => {
+    if (b.onclick && b.onclick.toString().includes('switchVisMode')) b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  showToast('切换显示模式：' + mode);
+  renderVis();
+}
+
+function togglePause() {
+  isPaused = !isPaused;
+  const btn = document.getElementById('pauseBtn');
+  btn.textContent = isPaused ? '继续' : '暂停';
+  btn.style.background = isPaused ? '#fff7e6' : '';
+  btn.style.color = isPaused ? '#fa8c16' : '';
+  if (simRef) {
+    if (isPaused) simRef.stop();
+    else simRef.alpha(0.3).restart();
+  }
+}
+
+function changeVisLayout(layout) {
+  visLayout = layout;
+  renderVis();
+}
+
+function changeVisLimit(limit) {
+  visLimit = limit;
+  renderVis();
+}
+
+function searchVisNode() {
+  const keyword = document.getElementById('visSearchInput').value.trim();
+  const depth = parseInt(document.getElementById('visDepthSelect').value);
+  if (!keyword) { showToast('请输入搜索关键词'); return; }
+
+  const matchedNodes = KG_NODES.filter(n => n.id.includes(keyword));
+  if (matchedNodes.length === 0) { showToast('未找到匹配的节点'); return; }
+
+  // BFS 获取子图
+  const allResultNodes = new Set();
+  const allResultEdges = [];
+  const visitedEdges = new Set();
+
+  matchedNodes.forEach(startNode => {
+    const subgraph = getSubgraphByDepth(startNode.id, depth);
+    subgraph.nodes.forEach(n => allResultNodes.add(n.id));
+    subgraph.edges.forEach(e => {
+      const key = e.s + '-' + e.t + '-' + e.r;
+      if (!visitedEdges.has(key)) { allResultEdges.push(e); visitedEdges.add(key); }
+    });
+  });
+
+  visHighlightNodes = new Set([...allResultNodes]);
+  currentLayoutNodes = KG_NODES.filter(n => allResultNodes.has(n.id));
+  currentLayoutEdges = allResultEdges;
+  renderVis();
+  showToast(`找到 ${matchedNodes.length} 个匹配节点，显示 ${allResultNodes.size} 个节点`);
+}
+
+function getSubgraphByDepth(startNodeId, maxDepth) {
+  const resultNodes = new Set([startNodeId]);
+  const resultEdges = [];
+  let currentLevel = new Set([startNodeId]);
+
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    const nextLevel = new Set();
+    KG_EDGES.forEach(e => {
+      if (currentLevel.has(e.s) && !resultNodes.has(e.t)) {
+        nextLevel.add(e.t);
+        resultNodes.add(e.t);
+        resultEdges.push(e);
+      }
+      if (currentLevel.has(e.t) && !resultNodes.has(e.s)) {
+        nextLevel.add(e.s);
+        resultNodes.add(e.s);
+        resultEdges.push(e);
+      }
+    });
+    currentLevel = nextLevel;
+    if (currentLevel.size === 0) break;
+  }
+
+  return { nodes: KG_NODES.filter(n => resultNodes.has(n.id)), edges: resultEdges };
+}
+
+let currentLayoutNodes = [];
+let currentLayoutEdges = [];
+
+function renderVis() {
+  const svgEl = document.getElementById('visSvg');
+  if (!svgEl) return;
+  svgEl.innerHTML = '';
+
+  // 过滤边
+  let filteredEdges = KG_EDGES.filter(e => visRelFilters[e.r] !== false);
+  let filteredNodes = KG_NODES;
+
+  // 搜索模式
+  if (visSearchNode && currentLayoutNodes.length > 0) {
+    filteredNodes = currentLayoutNodes;
+    filteredEdges = currentLayoutEdges.filter(e => visRelFilters[e.r] !== false);
+  } else {
+    // 只显示有边的节点
+    const connectedNodeIds = new Set();
+    filteredEdges.forEach(e => { connectedNodeIds.add(e.s); connectedNodeIds.add(e.t); });
+    filteredNodes = KG_NODES.filter(n => connectedNodeIds.has(n.id));
+  }
+
+  // 数量限制
+  if (visLimit !== 'all' && filteredEdges.length > parseInt(visLimit)) {
+    filteredEdges = filteredEdges.slice(0, parseInt(visLimit));
+    const limitedNodeIds = new Set();
+    filteredEdges.forEach(e => { limitedNodeIds.add(e.s); limitedNodeIds.add(e.t); });
+    filteredNodes = filteredNodes.filter(n => limitedNodeIds.has(n.id));
+  }
+
+  renderForceGraph(svgEl, filteredNodes, filteredEdges, { layout: visLayout });
+
+  // 渲染关系过滤
+  renderVisRelFilters();
+
+  // 渲染图例
+  document.getElementById('kgLegend').innerHTML = '<div class="vis-legend-title">节点类型</div>' +
+    Object.entries(nodeColors).map(([t, c]) => `<div class="vis-legend-item"><div class="vis-legend-dot" style="background:${c}"></div>${t}</div>`).join('');
+}
+
+function renderForceGraph(svgEl, nodes, edges, opts = {}) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const layoutType = opts.layout || 'force';
+  const W = svgEl.clientWidth || 800;
+  const H = svgEl.clientHeight || 600;
+  const margin = 60;
+
+  // 构建图数据
+  const g = document.createElementNS(ns, 'g');
+  svgEl.appendChild(g);
+
+  // 构建邻接表
+  const adj = {};
+  nodes.forEach(n => { adj[n.id] = { nbrs: new Set(), rels: [] }; });
+  edges.forEach(e => {
+    if (adj[e.s]) adj[e.s].nbrs.add(e.t);
+    if (adj[e.t]) adj[e.t].nbrs.add(e.s);
+    if (adj[e.s]) adj[e.s].rels.push({ other: e.t, rel: e.r, dir: 'out' });
+    if (adj[e.t]) adj[e.t].rels.push({ other: e.s, rel: e.r, dir: 'in' });
+  });
+  nodes.forEach(n => { n.deg = adj[n.id] ? adj[n.id].nbrs.size : 0; });
+
+  // 初始化节点位置
+  let simNodes;
+  if (layoutType === 'circular') {
+    const maxR = Math.min(W, H) / 2 - margin - 30;
+    simNodes = nodes.map((n, i) => {
+      const angle = (i / nodes.length) * Math.PI * 2;
+      return { ...n, x: W / 2 + Math.cos(angle) * maxR, y: H / 2 + Math.sin(angle) * maxR, vx: 0, vy: 0 };
+    });
+  } else if (layoutType === 'radial') {
+    const nodeList = nodes.map((n, i) => ({ n, d: n.deg || 0, i }));
+    nodeList.sort((a, b) => b.d - a.d);
+    const rings = [];
+    let ring = 0, count = 0;
+    nodeList.forEach(item => {
+      if (count >= Math.max(4, Math.floor(nodes.length / 3)) && ring < 3) { ring++; count = 0; }
+      rings.push(ring); count++;
+    });
+    simNodes = nodeList.map((item, i) => {
+      const ringNodes = nodeList.filter((x, j) => rings[j] === rings[i]).length;
+      const ringStart = nodeList.filter((x, j) => rings[j] < rings[i]).length;
+      const idx = i - ringStart;
+      const angle = (idx / ringNodes) * Math.PI * 2;
+      const maxR = Math.min(W, H) / 2 - margin - 30;
+      const radius = maxR * (0.2 + rings[i] * 0.25);
+      return { ...item.n, x: W / 2 + Math.cos(angle) * radius, y: H / 2 + Math.sin(angle) * radius, vx: 0, vy: 0 };
+    });
+  } else {
+    // 力导向布局 - 圆形分布
+    const nodeList = nodes.map((n, i) => ({ n, d: n.deg || 0, i }));
+    nodeList.sort((a, b) => b.d - a.d);
+    const rings = [];
+    let ring = 0, count = 0;
+    nodeList.forEach(item => {
+      if (count >= Math.max(6, Math.floor(nodes.length / 3)) && ring < 3) { ring++; count = 0; }
+      rings.push(ring); count++;
+    });
+    simNodes = nodeList.map((item, i) => {
+      const ringNodes = nodeList.filter((x, j) => rings[j] === rings[i]).length;
+      const ringStart = nodeList.filter((x, j) => rings[j] < rings[i]).length;
+      const idx = i - ringStart;
+      const angle = (idx / ringNodes) * Math.PI * 2 + Math.random() * 0.5;
+      const maxR = Math.min(W, H) / 2 - margin - 20;
+      const radius = maxR * (0.25 + rings[i] * 0.2) + Math.random() * 10;
+      return { ...item.n, x: W / 2 + Math.cos(angle) * radius, y: H / 2 + Math.sin(angle) * radius, vx: 0, vy: 0 };
+    });
+  }
+
+  // 边数据
+  const simEdges = edges.map(e => ({ ...e, source: e.s, target: e.t }));
+  const nodeById = {};
+  simNodes.forEach(n => nodeById[n.id] = n);
+  simEdges.forEach(e => { e.source = nodeById[e.s]; e.target = nodeById[e.t]; });
+
+  // 节点半径计算
+  const maxDeg = Math.max(...simNodes.map(n => n.deg), 1);
+  const rScale = n => 10 + (n.deg / maxDeg) * 15;
+
+  // 绘制边
+  const linkG = document.createElementNS(ns, 'g');
+  g.appendChild(linkG);
+  const linkEls = {};
+  simEdges.forEach((e, i) => {
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('stroke', '#d9d9d9');
+    line.setAttribute('stroke-width', '1');
+    line.setAttribute('marker-end', 'url(#arr)');
+    linkG.appendChild(line);
+    linkEls[i] = line;
+  });
+
+  // 边标签
+  const lblG = document.createElementNS(ns, 'g');
+  g.appendChild(lblG);
+  const lblEls = {};
+  simEdges.forEach((e, i) => {
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('font-size', '9');
+    t.setAttribute('fill', '#bfbfbf');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('pointer-events', 'none');
+    t.textContent = e.r;
+    lblG.appendChild(t);
+    lblEls[i] = t;
+  });
+
+  // 箭头
+  const defs = document.createElementNS(ns, 'defs');
+  defs.innerHTML = '<marker id="arr" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#d9d9d9"/></marker>';
+  svgEl.appendChild(defs);
+
+  // 绘制节点
+  const nodeG = document.createElementNS(ns, 'g');
+  g.appendChild(nodeG);
+  const nodeEls = {};
+
+  simNodes.forEach(n => {
+    const c = nodeColors[n.type] || '#888';
+    const r = rScale(n);
+    const grp = document.createElementNS(ns, 'g');
+    grp.style.cursor = 'pointer';
+
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('r', r);
+    circle.setAttribute('fill', c + '22');
+    circle.setAttribute('stroke', c);
+    circle.setAttribute('stroke-width', '1.5');
+    circle.style.transition = 'all 0.2s';
+
+    const label = document.createElementNS(ns, 'text');
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('font-size', '10');
+    label.setAttribute('fill', '#333');
+    label.setAttribute('pointer-events', 'none');
+    label.setAttribute('dy', r + 16);
+    label.textContent = n.id;
+
+    grp.appendChild(circle);
+    grp.appendChild(label);
+    nodeG.appendChild(grp);
+    nodeEls[n.id] = { grp, circle, r, color: c };
+
+    // 拖拽
+    let dragging = false, ox, oy, nx, ny;
+    grp.addEventListener('mousedown', ev => {
+      dragging = true; ox = ev.clientX; oy = ev.clientY; nx = n.x; ny = n.y;
+      n.fx = n.x; n.fy = n.y;
+      ev.stopPropagation();
+    });
+    document.addEventListener('mousemove', ev => {
+      if (!dragging) return;
+      n.fx = nx + (ev.clientX - ox);
+      n.fy = ny + (ev.clientY - oy);
+      if (simRef) simRef.alpha(0.3).restart();
+    });
+    document.addEventListener('mouseup', () => { if (dragging) { dragging = false; n.fx = null; n.fy = null; } });
+
+    // 点击
+    grp.addEventListener('click', ev => {
+      ev.stopPropagation();
+      highlightNode(n.id, adj, nodeEls, linkEls, simEdges, {});
+    });
+  });
+
+  // 平移缩放
+  let scale = 1, tx = 0, ty = 0, panning = false, px, py;
+  svgEl.addEventListener('mousedown', ev => { if (ev.target === svgEl) { panning = true; px = ev.clientX - tx; py = ev.clientY - ty; } });
+  svgEl.addEventListener('mousemove', ev => { if (!panning) return; tx = ev.clientX - px; ty = ev.clientY - py; g.setAttribute('transform', `translate(${tx},${ty}) scale(${scale})`); });
+  svgEl.addEventListener('mouseup', () => panning = false);
+  svgEl.addEventListener('wheel', ev => { ev.preventDefault(); scale = Math.max(0.3, Math.min(3, scale * (ev.deltaY < 0 ? 1.1 : 0.9))); g.setAttribute('transform', `translate(${tx},${ty}) scale(${scale})`); });
+
+  // 简单力模拟
+  let totalEnergy = Infinity, stableCount = 0;
+  function tick() {
+    simNodes.forEach(n => { if (n.vx === undefined) n.vx = 0; if (n.vy === undefined) n.vy = 0; });
+
+    if (layoutType === 'force') {
+      // 排斥力
+      for (let i = 0; i < simNodes.length; i++) {
+        for (let j = i + 1; j < simNodes.length; j++) {
+          const a = simNodes[i], b = simNodes[j];
+          const ra = Math.max(rScale(a), 8) + a.id.length * 4.5;
+          const rb = Math.max(rScale(b), 8) + b.id.length * 4.5;
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+          const minDist = ra + rb + 50;
+          if (dist < minDist) {
+            const f = (minDist - dist) / dist * 12.0;
+            a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
+          } else {
+            const f = 180000 / (dist * dist);
+            a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
+          }
+        }
+      }
+
+      // 吸引力（边）
+      simEdges.forEach(e => {
+        const s = e.source, t = e.target;
+        if (!s || !t) return;
+        const dx = t.x - s.x, dy = t.y - s.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const f = dist * 0.03;
+        s.vx += dx / dist * f; s.vy += dy / dist * f;
+        t.vx -= dx / dist * f; t.vy -= dy / dist * f;
+      });
+
+      // 圆形边界约束
+      const cx = W / 2, cy = H / 2;
+      const maxR = Math.min(W, H) / 2 - margin;
+      simNodes.forEach(n => {
+        const dx = n.x - cx, dy = n.y - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > maxR) {
+          n.vx -= dx / dist * 0.5; n.vy -= dy / dist * 0.5;
+        }
+      });
+
+      // 更新位置
+      simNodes.forEach(n => {
+        n.vx *= 0.85; n.vy *= 0.85;
+        if (n.fx !== undefined && n.fx !== null) { n.x = n.fx; n.y = n.fy; }
+        else { n.x += n.vx; n.y += n.vy; }
+      });
+    }
+
+    // 更新渲染
+    simEdges.forEach((e, i) => {
+      if (!e.source || !e.target) return;
+      const line = linkEls[i];
+      if (line) {
+        line.setAttribute('x1', e.source.x);
+        line.setAttribute('y1', e.source.y);
+        line.setAttribute('x2', e.target.x);
+        line.setAttribute('y2', e.target.y);
+      }
+      const lbl = lblEls[i];
+      if (lbl) { lbl.setAttribute('x', (e.source.x + e.target.x) / 2); lbl.setAttribute('y', (e.source.y + e.target.y) / 2 - 5); }
+    });
+
+    simNodes.forEach(n => {
+      const el = nodeEls[n.id];
+      if (el) {
+        el.grp.setAttribute('transform', `translate(${n.x},${n.y})`);
+        el.circle.setAttribute('r', rScale(n));
+        el.circle.setAttribute('fill', el.color + '22');
+        el.circle.setAttribute('stroke', el.color);
+        if (visHighlightNodes.size > 0 && !visHighlightNodes.has(n.id)) {
+          el.circle.setAttribute('opacity', '0.3');
+        } else {
+          el.circle.setAttribute('opacity', '1');
+        }
+      }
+    });
+
+    // 检查稳定性
+    const energy = simNodes.reduce((sum, n) => sum + Math.abs(n.vx) + Math.abs(n.vy), 0);
+    if (energy < 0.5) { stableCount++; if (stableCount > 10) return; }
+    else stableCount = 0;
+
+    if (!isPaused) requestAnimationFrame(tick);
+  }
+
+  simRef = { stop: () => { isPaused = true; }, alpha: () => simRef };
+  requestAnimationFrame(tick);
+}
+
+function highlightNode(nodeId, adj, nodeEls, linkEls, simEdges, opts) {
+  // 高亮节点
+  Object.keys(nodeEls).forEach(id => {
+    const el = nodeEls[id];
+    if (id === nodeId) {
+      el.circle.setAttribute('stroke-width', '3');
+      el.circle.setAttribute('fill', el.color + '66');
+    } else {
+      el.circle.setAttribute('stroke-width', '1.5');
+      el.circle.setAttribute('fill', el.color + '22');
+    }
+  });
+
+  // 显示节点信息
+  const panel = document.getElementById('visNodePanel');
+  const content = document.getElementById('visNodeContent');
+  const node = KG_NODES.find(n => n.id === nodeId);
+  if (node) {
+    const nodeAdj = adj[nodeId];
+    content.innerHTML = `
+      <div style="font-size:13px;font-weight:500;margin-bottom:8px">${node.id}</div>
+      <div style="font-size:11px;margin-bottom:6px">
+        <span style="padding:2px 6px;border-radius:10px;background:${nodeColors[node.type]}22;color:${nodeColors[node.type]};border:0.5px solid ${nodeColors[node.type]}55">${node.type}</span>
+      </div>
+      <div style="font-size:11px;color:#8c8c8c;margin-bottom:8px">关联节点：${nodeAdj ? nodeAdj.nbrs.size : 0} 个</div>
+      <div style="font-size:11px;color:#595959">
+        ${nodeAdj ? nodeAdj.rels.slice(0, 5).map(r => `<div style="margin-bottom:4px">${r.dir === 'out' ? '→' : '←'} ${r.rel} ${r.other}</div>`).join('') : ''}
+      </div>
+    `;
+    panel.style.display = 'block';
+  }
+}
+
+function closeVisNodeInfo() {
+  document.getElementById('visNodePanel').style.display = 'none';
+  document.querySelectorAll('#visSvg circle').forEach(c => { c.style.opacity = ''; c.setAttribute('stroke-width', '1.8'); });
+}
+
+function resetVisLayout() {
+  visSearchNode = '';
+  visHighlightNodes = new Set();
+  currentLayoutNodes = [];
+  currentLayoutEdges = [];
+  renderVis();
+  showToast('布局已重置');
+}
+
+// 初始化
+renderVis();
+</script>
+</body>
+</html>

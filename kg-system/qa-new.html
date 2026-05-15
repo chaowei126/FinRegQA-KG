@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能问答 - 金融监管知识图谱系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;font-size:13px;color:#1a1a1a;background:#f5f5f5;height:100vh;overflow:hidden}
+
+/* Top Nav */
+.topnav{display:flex;align-items:center;height:48px;background:#fff;border-bottom:0.5px solid #e0e0e0;padding:0 16px;gap:4px;position:fixed;top:0;left:0;right:0;z-index:100}
+.topnav .logo{display:flex;align-items:center;gap:8px;margin-right:20px}
+.topnav .logo-icon{width:28px;height:28px;background:#1677ff;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:500}
+.topnav .logo-text{font-size:14px;font-weight:500;color:#1a1a1a}
+.nav-item{padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;color:#595959;white-space:nowrap;transition:background 0.15s}
+.nav-item:hover{background:#f5f5f5;color:#1a1a1a}
+.nav-item.active{color:#1677ff;background:#e6f4ff}
+.nav-sep{flex:1}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:#1677ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;cursor:pointer}
+
+/* Main Layout */
+.main-layout{display:flex;height:calc(100vh - 48px);margin-top:48px}
+
+/* Left Sidebar - Session List */
+.session-sidebar{width:260px;background:#fff;border-right:0.5px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0}
+.session-sidebar-header{padding:16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid #f0f0f0}
+.session-sidebar-title{font-size:14px;font-weight:500;color:#1a1a1a}
+.new-session-btn{width:28px;height:28px;border-radius:50%;background:#1677ff;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:background 0.15s}
+.new-session-btn:hover{background:#0d6efd}
+.session-list{flex:1;overflow-y:auto;padding:8px}
+.session-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;margin-bottom:4px}
+.session-item:hover{background:#f5f5f5}
+.session-item.active{background:#e6f4ff}
+.session-icon{width:32px;height:32px;border-radius:8px;background:#f0f2f5;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.session-item.active .session-icon{background:#1677ff;color:#fff}
+.session-info{flex:1;min-width:0}
+.session-name{font-size:13px;color:#1a1a1a;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.session-time{font-size:11px;color:#999;margin-top:2px}
+.session-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s}
+.session-item:hover .session-actions{opacity:1}
+.session-action-btn{width:24px;height:24px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:12px}
+.session-action-btn:hover{background:#f0f0f0;color:#666}
+
+/* Center - Chat Area */
+.chat-area{flex:1;display:flex;flex-direction:column;min-width:0;background:#fff}
+.chat-header{padding:12px 20px;border-bottom:0.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.chat-title{font-size:15px;font-weight:500;color:#1a1a1a}
+.chat-title::before{content:"💬";margin-right:6px}
+.chat-actions{display:flex;gap:8px}
+.chat-action-btn{padding:5px 12px;border-radius:5px;font-size:12px;cursor:pointer;border:0.5px solid #d9d9d9;background:#fff;color:#595959;transition:all 0.15s}
+.chat-action-btn:hover{border-color:#1677ff;color:#1677ff}
+.chat-action-btn.primary{background:#1677ff;color:#fff;border-color:#1677ff}
+.chat-action-btn.primary:hover{background:#0d6efd}
+
+/* Messages */
+.messages{flex:1;overflow-y:auto;padding:20px}
+.welcome-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center}
+.welcome-icon{width:64px;height:64px;border-radius:50%;background:#e6f4ff;display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:16px}
+.welcome-title{font-size:18px;font-weight:500;color:#1a1a1a;margin-bottom:8px}
+.welcome-desc{font-size:13px;color:#8c8c8c;margin-bottom:24px;max-width:400px;line-height:1.6}
+.welcome-suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:500px}
+.welcome-suggestion{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#f8f9fc;border-radius:8px;cursor:pointer;transition:all 0.15s;text-align:left;border:0.5px solid transparent}
+.welcome-suggestion:hover{background:#e6f4ff;border-color:#1677ff}
+.welcome-suggestion-icon{font-size:16px}
+.welcome-suggestion-text{font-size:13px;color:#1a1a1a}
+
+.message{display:flex;gap:12px;margin-bottom:20px;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.message.user{flex-direction:row-reverse}
+.message-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.message-avatar.ai{background:#e6f4ff;color:#1677ff}
+.message-avatar.user{background:#1677ff;color:#fff}
+.message-content{max-width:70%}
+.message-bubble{padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.7}
+.message-bubble.ai{background:#f8f9fc;border:0.5px solid #e8e8e8;border-radius:0 12px 12px 12px}
+.message-bubble.user{background:#1677ff;color:#fff;border-radius:12px 0 12px 12px}
+
+/* Retrieval Info */
+.retrieval-info{background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:12px;margin-top:12px}
+.retrieval-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid #f0f0f0}
+.retrieval-title{font-size:12px;font-weight:500;color:#1677ff}
+.retrieval-tags{display:flex;gap:6px;flex-wrap:wrap}
+.retrieval-tag{padding:3px 8px;border-radius:10px;font-size:11px;background:#f0f6ff;color:#1677ff;border:0.5px solid #d6e4ff}
+.retrieval-tag.entity{background:#f6ffed;color:#389e0d;border-color:#d9f7be}
+.retrieval-tag.keyword{background:#fff7e6;color:#d48806;border-color:#ffd591}
+.retrieval-tag.record{background:#f9f0ff;color:#722ed1;border-color:#d3adf7}
+
+/* Chat Input */
+.chat-input-area{padding:16px 20px;border-top:0.5px solid #f0f0f0;background:#fff}
+.chat-input-row{display:flex;gap:12px;align-items:flex-end}
+.chat-input{flex:1;min-height:60px;max-height:120px;border:0.5px solid #d9d9d9;border-radius:8px;padding:10px 12px;font-size:13px;resize:none;outline:none;font-family:inherit;line-height:1.5}
+.chat-input:focus{border-color:#1677ff}
+.chat-send-btn{height:60px;padding:0 20px;background:#1677ff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;transition:background 0.15s}
+.chat-send-btn:hover{background:#0d6efd}
+.chat-send-btn:disabled{background:#d9d9d9;cursor:not-allowed}
+
+/* Right Panel - Retrieval Results */
+.retrieval-panel{width:320px;background:#fff;border-left:0.5px solid #e0e0e0;display:flex;flex-direction:column;flex-shrink:0;overflow:hidden}
+.retrieval-panel-header{padding:12px 16px;border-bottom:0.5px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.retrieval-panel-title{font-size:14px;font-weight:500;color:#1a1a1a}
+.retrieval-panel-title::before{content:"🔍";margin-right:6px}
+.retrieval-panel-actions{display:flex;gap:4px}
+.panel-action-btn{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#999;font-size:13px;border:none;background:transparent}
+.panel-action-btn:hover{background:#f5f5f5;color:#666}
+
+/* KG Visualization in Panel */
+.kg-viz-container{flex:1;overflow:hidden;position:relative;background:#f8f9fc}
+.kg-viz-canvas{width:100%;height:100%}
+.kg-legend{position:absolute;bottom:10px;left:10px;background:rgba(255,255,255,0.95);border-radius:6px;padding:8px 10px;border:0.5px solid #e0e0e0;font-size:11px}
+.kg-legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.kg-legend-dot{width:10px;height:10px;border-radius:50%}
+.kg-fullscreen-btn{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:6px;background:rgba(255,255,255,0.95);border:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:#666;transition:all 0.15s}
+.kg-fullscreen-btn:hover{background:#fff;color:#1677ff;border-color:#1677ff}
+
+/* KG Context */
+.kg-context{padding:12px 16px;border-top:0.5px solid #f0f0f0;max-height:200px;overflow-y:auto}
+.kg-context-title{font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:8px}
+.kg-context-item{padding:6px 0;border-bottom:0.5px solid #f5f5f5;font-size:12px;color:#595959;line-height:1.5}
+.kg-context-item:last-child{border-bottom:none}
+.kg-context-entity{color:#1677ff;font-weight:500}
+.kg-context-relation{color:#8c8c8c}
+
+/* Fullscreen Modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:1000;opacity:0;visibility:hidden;transition:all 0.3s}
+.modal-overlay.show{opacity:1;visibility:visible}
+.modal-content{width:90vw;height:90vh;background:#fff;border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.modal-header{padding:12px 20px;border-bottom:0.5px solid #e0e0e0;display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:500}
+.modal-close{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:#999;border:none;background:transparent}
+.modal-close:hover{background:#f5f5f5;color:#666}
+.modal-body{flex:1;overflow:hidden;position:relative}
+
+/* Toast */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:#fff;border:0.5px solid #e0e0e0;border-radius:8px;padding:10px 20px;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:8px;font-size:13px;z-index:1000;transition:all 0.3s}
+.toast.hide{opacity:0;transform:translateX(-50%) translateY(-20px);pointer-events:none}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d9d9d9;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#bfbfbf}
+
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item active" onclick="navigateTo('index')">智能问答</div>
+  <div class="nav-item" onclick="navigateTo('kg-vis')">图谱可视化</div>
+  <div class="nav-item" onclick="navigateTo('kg-manage')">图谱管理</div>
+  <div class="nav-item" onclick="navigateTo('docs')">文档管理</div>
+  <div class="nav-item" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <!-- Left Sidebar -->
+  <div class="session-sidebar">
+    <div class="session-sidebar-header">
+      <span class="session-sidebar-title">会话列表</span>
+      <button class="new-session-btn" onclick="createNewSession()" title="新建会话">+</button>
+    </div>
+    <div class="session-list" id="sessionList">
+      <!-- Sessions will be rendered here -->
+    </div>
+  </div>
+
+  <!-- Center Chat Area -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <span class="chat-title" id="chatTitle">新会话</span>
+      <div class="chat-actions">
+        <button class="chat-action-btn" onclick="clearCurrentSession()">🗑 清空</button>
+        <button class="chat-action-btn primary" onclick="exportSession()">📥 导出</button>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <!-- Welcome Screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">🤖</div>
+        <div class="welcome-title">欢迎使用金融监管智能问答系统</div>
+        <div class="welcome-desc">基于知识图谱和大语言模型，为您提供专业的金融监管知识问答服务</div>
+        <div class="welcome-suggestions">
+          <div class="welcome-suggestion" onclick="askQuestion('商业银行资本充足率的要求是什么？')">
+            <span class="welcome-suggestion-icon">🏦</span>
+            <span class="welcome-suggestion-text">商业银行资本充足率的要求是什么？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('流动性风险监管指标有哪些？')">
+            <span class="welcome-suggestion-icon">📊</span>
+            <span class="welcome-suggestion-text">流动性风险监管指标有哪些？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('反洗钱合规要求是什么？')">
+            <span class="welcome-suggestion-icon">🔒</span>
+            <span class="welcome-suggestion-text">反洗钱合规要求是什么？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('系统重要性银行的附加监管要求？')">
+            <span class="welcome-suggestion-icon">⭐</span>
+            <span class="welcome-suggestion-text">系统重要性银行的附加监管要求？</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <div class="chat-input-row">
+        <textarea class="chat-input" id="chatInput" placeholder="请输入您的问题... (例如：商业银行资本充足率的要求是什么？)" onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendMessage();}"></textarea>
+        <button class="chat-send-btn" id="sendBtn" onclick="sendMessage()">发送</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Retrieval Panel -->
+  <div class="retrieval-panel" id="retrievalPanel" style="opacity:0.5">
+    <div class="retrieval-panel-header">
+      <span class="retrieval-panel-title">检索结果</span>
+      <div class="retrieval-panel-actions">
+        <button class="panel-action-btn" onclick="togglePanel()" title="收起/展开">◀</button>
+      </div>
+    </div>
+    <div class="kg-viz-container" id="kgVizContainer">
+      <div id="kgEmptyState" style="display:flex;align-items:center;justify-content:center;height:100%;color:#999;font-size:13px">
+        <div style="text-align:center">
+          <div style="font-size:28px;margin-bottom:8px">🔍</div>
+          <div>输入问题后将显示</div>
+          <div>知识图谱检索结果</div>
+        </div>
+      </div>
+      <svg class="kg-viz-canvas" id="kgVizCanvas" style="display:none"></svg>
+      <div class="kg-legend" id="kgLegend" style="display:none"></div>
+      <button class="kg-fullscreen-btn" onclick="openFullscreen()" title="全屏查看" style="display:none" id="kgFullscreenBtn">⛶</button>
+    </div>
+    <div class="kg-context" id="kgContext" style="display:none">
+      <div class="kg-context-title">📋 图谱上下文</div>
+      <div id="kgContextList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Modal -->
+<div class="modal-overlay" id="fullscreenModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span class="modal-title">知识图谱可视化</span>
+      <button class="modal-close" onclick="closeFullscreen()">×</button>
+    </div>
+    <div class="modal-body">
+      <svg id="fullscreenCanvas" style="width:100%;height:100%"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// ==================== Data & State ====================
+let sessions = JSON.parse(localStorage.getItem('qa_sessions') || '[]');
+let currentSessionId = null;
+let isPanelCollapsed = false;
+
+// Sample QA knowledge base
+const qaKnowledge = {
+  '资本充足率': {
+    answer: `根据《商业银行资本管理办法》，商业银行资本充足率监管要求如下：
+
+1. **核心一级资本充足率** ≥ 7.5%
+2. **一级资本充足率** ≥ 8.5%
+3. **资本充足率** ≥ 10.5%
+
+其中，系统重要性银行还需满足附加资本要求：
+- 全球系统重要性银行：附加资本 1%-3.5%
+- 国内系统重要性银行：附加资本 1%
+
+资本充足率的计算公式为：
+资本充足率 = 总资本 / 风险加权资产 × 100%`,
+    keywords: ['资本充足率', '核心一级资本', '风险加权资产', '系统重要性银行'],
+    entities: ['商业银行', '资本充足率', '核心一级资本', '一级资本', '风险加权资产', '银保监会', '系统重要性银行'],
+    context: [
+      {s: '商业银行', r: '需满足', t: '资本充足率'},
+      {s: '资本管理办法', r: '制定', t: '资本充足率'},
+      {s: '资本充足率', r: '包含', t: '核心一级资本'},
+      {s: '资本充足率', r: '包含', t: '一级资本'},
+      {s: '系统重要性银行', r: '需满足', t: '附加资本要求'},
+      {s: '银保监会', r: '监管', t: '商业银行'}
+    ]
+  },
+  '流动性': {
+    answer: `流动性风险监管指标主要包括：
+
+1. **流动性覆盖率（LCR）** ≥ 100%
+   - 计算公式：优质流动性资产储备 / 未来30日净现金流出
+
+2. **净稳定资金比例（NSFR）** ≥ 100%
+   - 计算公式：可用的稳定资金 / 业务所需的稳定资金
+
+3. **流动性比例** ≥ 25%
+   - 计算公式：流动性资产余额 / 流动性负债余额
+
+4. **流动性匹配率** ≥ 100%
+
+这些指标旨在确保商业银行具有充足的优质流动性资产，能够在规定的流动性压力情景下，通过变现这些资产满足未来至少30天的流动性需求。`,
+    keywords: ['流动性覆盖率', '净稳定资金比例', '流动性比例', '优质流动性资产'],
+    entities: ['商业银行', '流动性覆盖率', '净稳定资金比例', '流动性比例', '优质流动性资产'],
+    context: [
+      {s: '商业银行', r: '需满足', t: '流动性覆盖率'},
+      {s: '商业银行', r: '需满足', t: '净稳定资金比例'},
+      {s: '流动性覆盖率', r: '计算方式', t: '优质流动性资产'},
+      {s: '流动性风险', r: '影响', t: '流动性覆盖率'}
+    ]
+  },
+  '反洗钱': {
+    answer: `金融机构反洗钱合规要求包括：
+
+1. **客户身份识别（KYC）**
+   - 建立客户身份识别制度
+   - 核对并登记客户身份信息
+   - 了解客户交易目的和性质
+
+2. **大额和可疑交易报告**
+   - 大额交易报告：单笔或当日累计人民币5万元以上
+   - 可疑交易报告：发现或有合理理由怀疑涉及洗钱
+
+3. **客户尽职调查（CDD）**
+   - 持续识别和重新识别客户身份
+   - 评估客户洗钱风险等级
+
+4. **反洗钱内控制度建设**
+   - 设立反洗钱专门机构或指定内设机构
+   - 建立客户身份资料和交易记录保存制度
+   - 开展反洗钱培训和宣传`,
+    keywords: ['反洗钱', 'KYC', '可疑交易报告', '客户尽职调查'],
+    entities: ['金融机构', '反洗钱', '客户身份识别', '可疑交易报告', '客户尽职调查'],
+    context: [
+      {s: '金融机构', r: '需满足', t: '反洗钱'},
+      {s: '反洗钱', r: '包含', t: '客户身份识别'},
+      {s: '反洗钱', r: '包含', t: '可疑交易报告'},
+      {s: '客户尽职调查', r: '评估', t: '洗钱风险'}
+    ]
+  },
+  '系统重要性银行': {
+    answer: `系统重要性银行是指其经营中断或失败可能对金融体系和经济活动造成严重影响的银行。
+
+**附加监管要求：**
+
+1. **附加资本要求**
+   - 全球系统重要性银行：1%-3.5%（分五档）
+   - 国内系统重要性银行：1%
+
+2. **恢复和处置计划**
+   - 制定恢复计划：确保在财务困难时能够恢复正常运营
+   - 制定处置计划：确保在无法恢复时能够有序处置
+
+3. **更严格的监管**
+   - 更频繁的风险评估
+   - 更严格的信息披露要求
+   - 更审慎的杠杆率要求
+
+4. **总损失吸收能力（TLAC）**
+   - 全球系统重要性银行需满足TLAC要求
+   - 风险加权比率 ≥ 16%
+   - 杠杆率 ≥ 6%`,
+    keywords: ['系统重要性银行', '附加资本', '恢复处置计划', 'TLAC'],
+    entities: ['系统重要性银行', '附加资本要求', '恢复计划', '处置计划', '总损失吸收能力', '全球系统重要性银行'],
+    context: [
+      {s: '系统重要性银行', r: '需满足', t: '附加资本要求'},
+      {s: '系统重要性银行', r: '需满足', t: '恢复计划'},
+      {s: '系统重要性银行', r: '需满足', t: '处置计划'},
+      {s: '全球系统重要性银行', r: '需满足', t: '总损失吸收能力'}
+    ]
+  }
+};
+
+// ==================== Session Management ====================
+function initSessions() {
+  if (sessions.length === 0) {
+    createNewSession();
+  } else {
+    currentSessionId = sessions[0].id;
+    renderSessionList();
+    loadSession(currentSessionId);
+  }
+}
+
+function createNewSession() {
+  const id = Date.now().toString();
+  const session = {
+    id,
+    name: '新会话-' + Math.floor(Math.random() * 10000),
+    time: new Date().toLocaleString('zh-CN'),
+    messages: []
+  };
+  sessions.unshift(session);
+  currentSessionId = id;
+  saveSessions();
+  renderSessionList();
+  clearMessages();
+  showToast('新会话已创建');
+}
+
+function loadSession(id) {
+  currentSessionId = id;
+  const session = sessions.find(s => s.id === id);
+  if (!session) return;
+
+  document.getElementById('chatTitle').textContent = session.name;
+  renderSessionList();
+
+  const messagesEl = document.getElementById('messages');
+  if (session.messages.length === 0) {
+    messagesEl.innerHTML = `
+      <div class="welcome-screen">
+        <div class="welcome-icon">🤖</div>
+        <div class="welcome-title">欢迎使用金融监管智能问答系统</div>
+        <div class="welcome-desc">基于知识图谱和大语言模型，为您提供专业的金融监管知识问答服务</div>
+        <div class="welcome-suggestions">
+          <div class="welcome-suggestion" onclick="askQuestion('商业银行资本充足率的要求是什么？')">
+            <span class="welcome-suggestion-icon">🏦</span>
+            <span class="welcome-suggestion-text">商业银行资本充足率的要求是什么？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('流动性风险监管指标有哪些？')">
+            <span class="welcome-suggestion-icon">📊</span>
+            <span class="welcome-suggestion-text">流动性风险监管指标有哪些？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('反洗钱合规要求是什么？')">
+            <span class="welcome-suggestion-icon">🔒</span>
+            <span class="welcome-suggestion-text">反洗钱合规要求是什么？</span>
+          </div>
+          <div class="welcome-suggestion" onclick="askQuestion('系统重要性银行的附加监管要求？')">
+            <span class="welcome-suggestion-icon">⭐</span>
+            <span class="welcome-suggestion-text">系统重要性银行的附加监管要求？</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    messagesEl.innerHTML = '';
+    session.messages.forEach(msg => {
+      appendMessage(msg.content, msg.type, msg.retrieval, false);
+    });
+  }
+}
+
+function renderSessionList() {
+  const list = document.getElementById('sessionList');
+  list.innerHTML = sessions.map(s => `
+    <div class="session-item ${s.id === currentSessionId ? 'active' : ''}" onclick="loadSession('${s.id}')">
+      <div class="session-icon">💬</div>
+      <div class="session-info">
+        <div class="session-name">${s.name}</div>
+        <div class="session-time">${s.time}</div>
+      </div>
+      <div class="session-actions">
+        <span class="session-action-btn" onclick="event.stopPropagation();renameSession('${s.id}')" title="重命名">✎</span>
+        <span class="session-action-btn" onclick="event.stopPropagation();deleteSession('${s.id}')" title="删除">🗑</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renameSession(id) {
+  const session = sessions.find(s => s.id === id);
+  if (!session) return;
+  const newName = prompt('请输入新名称:', session.name);
+  if (newName && newName.trim()) {
+    session.name = newName.trim();
+    saveSessions();
+    renderSessionList();
+    if (id === currentSessionId) {
+      document.getElementById('chatTitle').textContent = session.name;
+    }
+  }
+}
+
+function deleteSession(id) {
+  if (!confirm('确定要删除这个会话吗？')) return;
+  sessions = sessions.filter(s => s.id !== id);
+  saveSessions();
+  if (sessions.length === 0) {
+    createNewSession();
+  } else {
+    loadSession(sessions[0].id);
+  }
+}
+
+function clearCurrentSession() {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (session) {
+    session.messages = [];
+    saveSessions();
+    loadSession(currentSessionId);
+    showToast('会话已清空');
+  }
+}
+
+function exportSession() {
+  const session = sessions.find(s => s.id === currentSessionId);
+  if (!session || session.messages.length === 0) {
+    showToast('当前会话没有内容可导出');
+    return;
+  }
+  const data = JSON.stringify(session, null, 2);
+  const blob = new Blob([data], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = session.name + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('会话已导出');
+}
+
+function saveSessions() {
+  localStorage.setItem('qa_sessions', JSON.stringify(sessions));
+}
+
+// ==================== Chat Functions ====================
+function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  askQuestion(question);
+  input.value = '';
+}
+
+function askQuestion(question) {
+  // Add user message
+  appendMessage(question, 'user', null, true);
+
+  // Show loading
+  const loadingId = 'loading-' + Date.now();
+  appendMessage('正在检索知识图谱...', 'ai', null, true, loadingId);
+
+  // Simulate AI processing
+  setTimeout(() => {
+    // Remove loading
+    const loadingEl = document.getElementById(loadingId);
+    if (loadingEl) loadingEl.remove();
+
+    // Find answer
+    const result = findAnswer(question);
+    appendMessage(result.answer, 'ai', result, true);
+
+    // Update retrieval panel
+    updateRetrievalPanel(result);
+  }, 1200);
+}
+
+function findAnswer(question) {
+  const lowerQ = question.toLowerCase();
+
+  for (const [key, value] of Object.entries(qaKnowledge)) {
+    if (lowerQ.includes(key)) {
+      return value;
+    }
+  }
+
+  // Default response
+  return {
+    answer: `我正在分析您的问题"${question}"。
+
+根据知识图谱中的相关信息，这个问题涉及多个金融监管领域。建议您：
+
+1. 尝试使用更具体的关键词，如"资本充足率"、"流动性风险"等
+2. 访问图谱可视化页面查看完整的知识图谱结构
+3. 查看相关监管文档获取详细信息`,
+    keywords: ['金融监管', '知识图谱', '智能问答'],
+    entities: ['商业银行', '银保监会', '监管政策'],
+    context: [
+      {s: '商业银行', r: '监管', t: '银保监会'},
+      {s: '银保监会', r: '颁布', t: '监管政策'}
+    ]
+  };
+}
+
+function appendMessage(content, type, retrieval = null, save = true, id = null) {
+  const messagesEl = document.getElementById('messages');
+  const welcomeScreen = document.getElementById('welcomeScreen');
+  if (welcomeScreen) welcomeScreen.remove();
+
+  const msgEl = document.createElement('div');
+  msgEl.className = 'message ' + type;
+  if (id) msgEl.id = id;
+
+  let html = '';
+
+  if (type === 'ai' && retrieval) {
+    html = `
+      <div class="message-avatar ai">AI</div>
+      <div class="message-content">
+        <div class="message-bubble ai">${formatAnswer(content)}</div>
+        <div class="retrieval-info">
+          <div class="retrieval-header">
+            <span class="retrieval-title">🔍 检索到相关知识</span>
+          </div>
+          <div style="margin-bottom:8px">
+            <span style="font-size:11px;color:#999">关键词：</span>
+            <div class="retrieval-tags">
+              ${retrieval.keywords.map(k => `<span class="retrieval-tag keyword">${k}</span>`).join('')}
+            </div>
+          </div>
+          <div>
+            <span style="font-size:11px;color:#999">实体：</span>
+            <div class="retrieval-tags">
+              ${retrieval.entities.map(e => `<span class="retrieval-tag entity">${e}</span>`).join('')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    html = `
+      <div class="message-avatar ${type}">${type === 'ai' ? 'AI' : '我'}</div>
+      <div class="message-content">
+        <div class="message-bubble ${type}">${content}</div>
+      </div>`;
+  }
+
+  msgEl.innerHTML = html;
+  messagesEl.appendChild(msgEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  if (save && currentSessionId) {
+    const session = sessions.find(s => s.id === currentSessionId);
+    if (session) {
+      session.messages.push({type, content, retrieval, time: new Date().toISOString()});
+      saveSessions();
+    }
+  }
+}
+
+function formatAnswer(text) {
+  return text.replace(/\n/g, '<br>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code style="background:#f0f0f0;padding:2px 4px;border-radius:3px;font-size:12px">$1</code>');
+}
+
+function clearMessages() {
+  document.getElementById('messages').innerHTML = `
+    <div class="welcome-screen" id="welcomeScreen">
+      <div class="welcome-icon">🤖</div>
+      <div class="welcome-title">欢迎使用金融监管智能问答系统</div>
+      <div class="welcome-desc">基于知识图谱和大语言模型，为您提供专业的金融监管知识问答服务</div>
+      <div class="welcome-suggestions">
+        <div class="welcome-suggestion" onclick="askQuestion('商业银行资本充足率的要求是什么？')">
+          <span class="welcome-suggestion-icon">🏦</span>
+          <span class="welcome-suggestion-text">商业银行资本充足率的要求是什么？</span>
+        </div>
+        <div class="welcome-suggestion" onclick="askQuestion('流动性风险监管指标有哪些？')">
+          <span class="welcome-suggestion-icon">📊</span>
+          <span class="welcome-suggestion-text">流动性风险监管指标有哪些？</span>
+        </div>
+        <div class="welcome-suggestion" onclick="askQuestion('反洗钱合规要求是什么？')">
+          <span class="welcome-suggestion-icon">🔒</span>
+          <span class="welcome-suggestion-text">反洗钱合规要求是什么？</span>
+        </div>
+        <div class="welcome-suggestion" onclick="askQuestion('系统重要性银行的附加监管要求？')">
+          <span class="welcome-suggestion-icon">⭐</span>
+          <span class="welcome-suggestion-text">系统重要性银行的附加监管要求？</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ==================== KG Visualization ====================
+function updateRetrievalPanel(retrieval) {
+  // Show retrieval results
+  document.getElementById('kgEmptyState').style.display = 'none';
+  document.getElementById('kgVizCanvas').style.display = 'block';
+  document.getElementById('kgLegend').style.display = 'block';
+  document.getElementById('kgFullscreenBtn').style.display = 'flex';
+  document.getElementById('kgContext').style.display = 'block';
+  document.getElementById('retrievalPanel').style.opacity = '1';
+
+  // Update context
+  const contextList = document.getElementById('kgContextList');
+  if (retrieval.context && retrieval.context.length > 0) {
+    contextList.innerHTML = retrieval.context.map(ctx => `
+      <div class="kg-context-item">
+        <span class="kg-context-entity">${ctx.s}</span>
+        <span class="kg-context-relation"> —${ctx.r}→ </span>
+        <span class="kg-context-entity">${ctx.t}</span>
+      </div>
+    `).join('');
+  }
+
+  // Draw KG visualization
+  drawKGViz(retrieval.entities || [], retrieval.context || []);
+}
+
+function drawKGViz(entities, context) {
+  const svg = document.getElementById('kgVizCanvas');
+  const width = svg.clientWidth || 300;
+  const height = svg.clientHeight || 300;
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  // Build nodes from entities and context
+  const nodeMap = new Map();
+  const colors = {
+    '监管机构': '#1677ff',
+    '法规文件': '#f5222d',
+    '金融机构': '#52c41a',
+    '监管指标': '#fa8c16',
+    '风险类别': '#722ed1',
+    '处罚事项': '#eb2f96',
+    '报告要求': '#13c2c2',
+    '合规要求': '#fadb14',
+    '监管政策': '#2f54eb',
+    '市场主体': '#fa541c',
+    '客户主体': '#722ed1',
+    '金融产品': '#52c41a',
+    '财务指标': '#fa8c16',
+    '风险指标': '#eb2f96'
+  };
+
+  // Add entities as nodes
+  entities.forEach((e, i) => {
+    const type = Object.keys(colors).find(t => e.includes(t)) || '监管指标';
+    nodeMap.set(e, {
+      id: e,
+      type,
+      x: width / 2 + Math.cos(i * 2 * Math.PI / entities.length) * 80,
+      y: height / 2 + Math.sin(i * 2 * Math.PI / entities.length) * 80
+    });
+  });
+
+  // Add context nodes
+  context.forEach(ctx => {
+    if (!nodeMap.has(ctx.s)) {
+      nodeMap.set(ctx.s, {
+        id: ctx.s,
+        type: '金融机构',
+        x: width / 2 + (Math.random() - 0.5) * 160,
+        y: height / 2 + (Math.random() - 0.5) * 160
+      });
+    }
+    if (!nodeMap.has(ctx.t)) {
+      nodeMap.set(ctx.t, {
+        id: ctx.t,
+        type: '监管指标',
+        x: width / 2 + (Math.random() - 0.5) * 160,
+        y: height / 2 + (Math.random() - 0.5) * 160
+      });
+    }
+  });
+
+  const nodes = Array.from(nodeMap.values());
+
+  // Generate SVG
+  let svgHtml = '';
+
+  // Draw edges
+  context.forEach(ctx => {
+    const s = nodeMap.get(ctx.s);
+    const t = nodeMap.get(ctx.t);
+    if (s && t) {
+      svgHtml += `<line x1="${s.x}" y1="${s.y}" x2="${t.x}" y2="${t.y}" stroke="#d9d9d9" stroke-width="1.5"/>`;
+      // Edge label
+      const mx = (s.x + t.x) / 2;
+      const my = (s.y + t.y) / 2;
+      svgHtml += `<rect x="${mx - 20}" y="${my - 8}" width="40" height="16" rx="3" fill="#fff" stroke="#e0e0e0" stroke-width="0.5"/>`;
+      svgHtml += `<text x="${mx}" y="${my + 3}" text-anchor="middle" font-size="9" fill="#999">${ctx.r}</text>`;
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(node => {
+    const color = colors[node.type] || '#1677ff';
+    svgHtml += `<circle cx="${node.x}" cy="${node.y}" r="18" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-width="2"/>`;
+    svgHtml += `<text x="${node.x}" y="${node.y + 4}" text-anchor="middle" font-size="10" fill="#1a1a1a" font-weight="500">${node.id.length > 4 ? node.id.slice(0, 4) + '..' : node.id}</text>`;
+  });
+
+  svg.innerHTML = svgHtml;
+
+  // Update legend
+  const legend = document.getElementById('kgLegend');
+  const usedTypes = [...new Set(nodes.map(n => n.type))];
+  legend.innerHTML = usedTypes.map(t => `
+    <div class="kg-legend-item">
+      <span class="kg-legend-dot" style="background:${colors[t] || '#1677ff'}"></span>
+      <span>${t}</span>
+    </div>
+  `).join('');
+}
+
+// ==================== Panel & Fullscreen ====================
+function togglePanel() {
+  const panel = document.getElementById('retrievalPanel');
+  isPanelCollapsed = !isPanelCollapsed;
+  panel.style.width = isPanelCollapsed ? '0' : '320px';
+  panel.style.opacity = isPanelCollapsed ? '0' : '1';
+}
+
+function openFullscreen() {
+  document.getElementById('fullscreenModal').classList.add('show');
+  // Redraw in fullscreen
+  setTimeout(() => {
+    const svg = document.getElementById('fullscreenCanvas');
+    const panelSvg = document.getElementById('kgVizCanvas');
+    if (panelSvg) {
+      svg.innerHTML = panelSvg.innerHTML;
+      svg.setAttribute('viewBox', panelSvg.getAttribute('viewBox'));
+    }
+  }, 100);
+}
+
+function closeFullscreen() {
+  document.getElementById('fullscreenModal').classList.remove('show');
+}
+
+// ==================== Navigation ====================
+function navigateTo(page) {
+  window.location.href = page + '.html';
+}
+
+// ==================== Toast ====================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast';
+  setTimeout(() => t.className = 'toast hide', 3000);
+}
+
+// ==================== Init ====================
+document.addEventListener('DOMContentLoaded', function() {
+  initSessions();
+});
+</script>
+</body>
+</html>

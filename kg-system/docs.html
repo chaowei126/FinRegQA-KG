@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>文档管理 - 金融监管知识图谱系统</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('index')">首页</div>
+  <div class="nav-item" onclick="navigateTo('qa')">智能问答</div>
+  <div class="nav-item active kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="navigateTo('docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">文档目录</div>
+      <div class="sidebar-actions">
+        <button class="btn btn-success" onclick="showUpload()">↑ 上传文档</button>
+        <button class="btn btn-outline" onclick="showNewDir()">⊞ 新建目录</button>
+      </div>
+    </div>
+    <div class="search-box">
+      <input class="search-input" id="docSearchInput" placeholder="搜索文档（匹配标题、摘要、文件名）" oninput="searchDocs()" />
+    </div>
+    <div class="tree-area" id="treeArea"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="mainContent">
+    <!-- Stats Bar -->
+    <div class="stats-bar" id="statsBar">
+      <div class="stat-chip active" onclick="filterType('all')"><span>目录</span><span class="count" id="countDir">2</span></div>
+      <div class="stat-chip" onclick="filterType('all')"><span>全部</span><span class="count" id="countAll">9</span></div>
+      <div class="stat-chip" onclick="filterType('pdf')"><span>PDF</span><span class="count" id="countPdf">6</span></div>
+      <div class="stat-chip" onclick="filterType('word')"><span>Word</span><span class="count" id="countWord">1</span></div>
+      <div class="stat-chip" onclick="filterType('excel')"><span>Excel</span><span class="count" id="countExcel">2</span></div>
+      <div class="stat-chip" onclick="filterBuilt('built')"><span>✓ 已构建</span><span class="count" id="countBuilt">3</span></div>
+      <div class="stat-chip" onclick="filterBuilt('unbuilt')"><span>✗ 未构建</span><span class="count" id="countUnbuilt">6</span></div>
+    </div>
+    <!-- Doc View -->
+    <div id="docView" class="doc-view">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;color:#bfbfbf;flex-direction:column;gap:12px">
+        <div style="font-size:40px">📂</div>
+        <div style="font-size:14px">请从左侧目录选择文档</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Build Modal -->
+<div class="modal-overlay hidden" id="buildModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">构建知识图谱</div>
+      <div class="modal-close" onclick="closeBuildModal()">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#8c8c8c;margin-bottom:12px">选择构建范围：</div>
+      <div class="build-option selected" id="build-single" onclick="selectBuildOpt('single')">
+        <div class="build-option-radio" id="radio-single"></div>
+        <div class="build-option-info">
+          <div class="label">构建当前文档</div>
+          <div class="desc" id="buildDocName">仅对当前选中文档构建知识图谱</div>
+        </div>
+      </div>
+      <div class="build-option" id="build-dir" onclick="selectBuildOpt('dir')">
+        <div class="build-option-radio" id="radio-dir"></div>
+        <div class="build-option-info">
+          <div class="label">按目录构建</div>
+          <div class="desc">对当前目录下所有文档批量构建知识图谱</div>
+        </div>
+      </div>
+      <div class="build-option" id="build-all" onclick="selectBuildOpt('all')">
+        <div class="build-option-radio" id="radio-all"></div>
+        <div class="build-option-info">
+          <div class="label">全量构建</div>
+          <div class="desc">对所有未构建文档进行全量构建</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeBuildModal()">取消</button>
+      <button class="btn btn-primary" onclick="startBuild()">开始构建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay hidden" id="uploadModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">上传文档</div>
+      <div class="modal-close" onclick="document.getElementById('uploadModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div class="upload-area">
+        <div style="font-size:32px;margin-bottom:8px">📄</div>
+        <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px">点击或拖拽文件到此区域上传</div>
+        <div style="font-size:12px">支持 PDF、Word、Excel、TXT 格式，单文件不超过 50MB</div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">上传目录：</div>
+        <select class="form-select" id="uploadDirSelect">
+          <option value="1">目录1 - 监管法规</option>
+          <option value="2">目录2 - 行业报告</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('uploadModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="document.getElementById('uploadModal').classList.add('hidden');showToast('文档上传成功')">确认上传</button>
+    </div>
+  </div>
+</div>
+
+<!-- NewDir Modal -->
+<div class="modal-overlay hidden" id="newDirModal">
+  <div class="modal" style="width:380px">
+    <div class="modal-header">
+      <div class="modal-title">新建目录</div>
+      <div class="modal-close" onclick="document.getElementById('newDirModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">目录名称</div>
+      <input class="form-input" placeholder="请输入目录名称" id="newDirInput" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('newDirModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="createDir()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// 状态变量
+let currentDoc = null;
+let currentTab = 'original';
+let buildOpt = 'single';
+let localDirs = JSON.parse(JSON.stringify(dirs));
+let localDocs = JSON.parse(JSON.stringify(docs));
+
+// 渲染树形结构
+function renderTree() {
+  const area = document.getElementById('treeArea');
+  area.innerHTML = '';
+  localDirs.forEach(dir => {
+    const dirDocs = localDocs.filter(d => d.dir === dir.id);
+    const dirEl = document.createElement('div');
+    dirEl.className = 'tree-dir';
+    dirEl.innerHTML = `
+      <div class="tree-dir-header" onclick="toggleDir(${dir.id})">
+        <span class="tree-arrow ${dir.open ? 'open' : ''}" id="arr-${dir.id}">▶</span>
+        <span class="dir-icon">📁</span>
+        <span class="dir-name" id="dir-name-${dir.id}">${dir.name}</span>
+        <span class="dir-count">(${dirDocs.length})</span>
+        <span class="dir-actions" style="display:none;gap:4px;align-items:center" id="dir-actions-${dir.id}">
+          <span style="font-size:11px;color:#1677ff;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();showUploadToDir(${dir.id})" title="上传文档">↑</span>
+          <span style="font-size:11px;color:#fa8c16;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();showRenameDir(${dir.id})" title="重命名">✎</span>
+          <span style="font-size:11px;color:#ff4d4f;cursor:pointer;padding:2px 4px;border-radius:3px" onclick="event.stopPropagation();deleteDir(${dir.id})" title="删除目录">🗑</span>
+        </span>
+        <span style="font-size:11px;color:#bfbfbf;cursor:pointer;padding:0 4px" onclick="event.stopPropagation();showBuildDir(${dir.id})">⚙</span>
+      </div>
+      <div class="tree-files" id="dir-files-${dir.id}" style="${dir.open ? '' : 'display:none'}">
+        ${dirDocs.map(d => `
+          <div class="tree-file ${currentDoc && currentDoc.id === d.id ? 'selected' : ''}" id="file-${d.id}" onclick="selectDoc(${d.id})">
+            <span class="file-type-badge badge-${d.type === 'pdf' ? 'pdf' : d.type === 'xlsx' ? 'xlsx' : 'word'}">${d.type.toUpperCase()}</span>
+            <span class="file-name">${d.name}</span>
+            <span class="${d.built ? 'status-built' : 'status-unbuilt'}" title="${d.built ? '已构建图谱' : '未构建图谱'}">${d.built ? '●' : '○'}</span>
+          </div>`).join('')}
+      </div>`;
+    const header = dirEl.querySelector('.tree-dir-header');
+    const actions = dirEl.querySelector('.dir-actions');
+    header.addEventListener('mouseenter', () => { if (actions) actions.style.display = 'flex'; });
+    header.addEventListener('mouseleave', () => { if (actions) actions.style.display = 'none'; });
+    area.appendChild(dirEl);
+  });
+}
+
+function toggleDir(id) {
+  const dir = localDirs.find(d => d.id === id);
+  dir.open = !dir.open;
+  document.getElementById('dir-files-' + id).style.display = dir.open ? '' : 'none';
+  document.getElementById('arr-' + id).className = 'tree-arrow' + (dir.open ? ' open' : '');
+}
+
+function selectDoc(id) {
+  currentDoc = localDocs.find(d => d.id === id);
+  currentTab = 'original';
+  renderDocView();
+  renderTree();
+}
+
+function renderDocView() {
+  const v = document.getElementById('docView');
+  if (!currentDoc) {
+    v.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📂</div><div class="empty-state-text">请从左侧目录选择文档</div></div>';
+    return;
+  }
+  const d = currentDoc;
+  const builtTag = d.built ? '<span class="doc-tag doc-tag-built">已构建图谱</span>' : '<span class="doc-tag doc-tag-unbuilt">未构建图谱</span>';
+  v.innerHTML = `
+    <div class="doc-header">
+      <div class="doc-title-row">
+        <div class="doc-title">${d.name}</div>
+        <div class="doc-actions">
+          <button class="btn btn-success" onclick="openBuildModal()" style="font-size:12px">⚡ 构建知识图谱</button>
+          <button class="btn btn-outline" style="font-size:12px">↓ 下载</button>
+          <button class="btn btn-danger" style="font-size:12px" onclick="deleteDoc()">删除</button>
+          <span style="cursor:pointer;color:#8c8c8c;font-size:18px;margin-left:4px" onclick="currentDoc=null;renderDocView();renderTree()">×</span>
+        </div>
+      </div>
+      <div class="doc-meta-row">
+        <span class="doc-tag doc-tag-pdf">${d.type.toUpperCase()}</span>
+        ${builtTag}
+      </div>
+      <div class="doc-info">
+        <span>文件名：${d.name}.${d.type}</span>
+        <span>文件大小：${d.size}</span>
+        <span>上传者：${d.uploader}</span>
+        <span>上传时间：${d.date}</span>
+        <span>提取字数：${d.chars.toLocaleString()} 字</span>
+      </div>
+      <div class="doc-content-tabs">
+        <div class="doc-tab ${currentTab === 'original' ? 'active' : ''}" onclick="switchDocTab('original')">原文档</div>
+        <div class="doc-tab ${currentTab === 'extract' ? 'active' : ''}" onclick="switchDocTab('extract')">提取内容</div>
+        ${d.built ? `<div class="doc-tab ${currentTab === 'kg' ? 'active' : ''}" onclick="switchDocTab('kg')">知识图谱</div>` : ''}
+      </div>
+    </div>
+    <div class="doc-body" id="docBody" style="${currentTab === 'kg' ? 'overflow:hidden;flex:1' : 'overflow-y:auto'}">${renderDocBody()}</div>`;
+}
+
+function switchDocTab(tab) {
+  currentTab = tab;
+  renderDocView();
+}
+
+function renderDocBody() {
+  const d = currentDoc;
+  if (currentTab === 'original') {
+    if (d.type === 'xlsx') {
+      return `<div class="empty-state" style="padding:60px"><div class="empty-state-icon">ℹ</div><div class="empty-state-text">该文件类型暂不支持在线预览，请下载后查看</div><button class="btn btn-primary" style="margin-top:16px">↓ 下载文档</button></div>`;
+    }
+    return `<div class="pdf-preview">
+      <div class="pdf-thumbs">
+        ${[1, 2, 3, 4, 5].map(n => `<div class="pdf-thumb ${n === 1 ? 'active' : ''}"><div class="pdf-thumb-img">第${n}页</div><div class="pdf-thumb-num">${n}</div></div>`).join('')}
+      </div>
+      <div class="pdf-main">
+        <div class="pdf-content-title">${d.name}</div>
+        ${d.abstract ? `<div style="margin-bottom:16px"><div class="pdf-content-label">文档摘要</div><div class="pdf-content-abs">${d.abstract}</div></div>` : ''}
+        <div class="pdf-content-label">正文节选</div>
+        <div class="pdf-content-body">
+          本文件依据相关监管法规，对金融机构的合规要求、风险管控措施、信息披露义务进行了系统性规定。
+          <br><br>
+          第一章 总则<br>
+          第一条 为规范金融机构经营行为，防范金融风险，维护金融稳定，依据《中华人民共和国银行业监督管理法》、《中华人民共和国商业银行法》等法律法规，制定本规定。<br>
+          <br>
+          第二条 本规定适用于在中华人民共和国境内设立的商业银行、政策性银行及其在境内外的分支机构。
+        </div>
+      </div>
+    </div>`;
+  }
+  if (currentTab === 'extract') {
+    if (d.type === 'xlsx') {
+      return `<div class="extract-content">
+        <div class="extract-header"><div class="extract-title">文档内容</div><div class="extract-count">共 ${d.chars.toLocaleString()} 字</div></div>
+        <div class="extract-body">
+          <p>=== Sheet: Sheet1 ===</p>
+          <p style="margin-top:8px">金融机构监管指标体系 | 指标类别 | 计算公式 | 监管要求 | 备注</p>
+          <table>
+            <tr><th>指标名称</th><th>指标类别</th><th>计算公式</th><th>监管要求</th><th>适用机构</th></tr>
+            <tr><td>资本充足率</td><td>资本类</td><td>资本净额/风险加权资产</td><td>≥10.5%</td><td>商业银行</td></tr>
+            <tr><td>流动性覆盖率</td><td>流动性</td><td>优质流动性资产/未来30天净现金流出</td><td>≥100%</td><td>商业银行</td></tr>
+            <tr><td>不良贷款率</td><td>资产质量</td><td>不良贷款余额/贷款余额</td><td>≤5%</td><td>商业银行</td></tr>
+          </table>
+        </div>
+      </div>`;
+    }
+    return `<div class="extract-content">
+      <div class="extract-header"><div class="extract-title">文档内容</div><div class="extract-count">共 ${d.chars.toLocaleString()} 字</div></div>
+      <div class="extract-body">
+        <p><strong>${d.name}</strong></p>
+        <p style="margin-top:8px;color:#8c8c8c">提取时间：${d.date} | 提取字数：${d.chars.toLocaleString()} 字</p>
+        ${d.abstract ? `<p style="margin-top:12px;background:#f8f8f8;padding:10px;border-radius:6px;line-height:1.8">${d.abstract}</p>` : ''}
+        <p style="margin-top:12px;line-height:1.9">
+          第一章 总则<br>
+          第一条 为规范金融监管工作，保护金融消费者合法权益，防范和化解金融风险，维护金融稳定，根据相关法律法规，制定本规定。<br><br>
+          第二条 本规定所称监管指标，是指用于衡量金融机构稳健经营状况、流动性风险、信用风险、操作风险等各类风险的定量标准。金融监管机构依据本规定对金融机构实施持续性监测与评估。
+        </p>
+      </div>
+    </div>`;
+  }
+  if (currentTab === 'kg') {
+    return `<div style="height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#8c8c8c">
+      <div style="font-size:48px">🕸️</div>
+      <div style="font-size:14px">该文档的知识图谱</div>
+      <button class="btn btn-primary" onclick="window.open('kg-vis.html?doc=${d.id}', '_blank')" style="margin-top:8px">🔍 查看完整图谱</button>
+    </div>`;
+  }
+  return '';
+}
+
+// 模态框函数
+function showUpload() { document.getElementById('uploadModal').classList.remove('hidden'); }
+function showNewDir() { document.getElementById('newDirModal').classList.remove('hidden'); }
+function showUploadToDir(dirId) { document.getElementById('uploadDirSelect').value = dirId; showUpload(); }
+function showBuildDir(dirId) { document.getElementById('buildDocName').textContent = '目录：' + localDirs.find(d => d.id === dirId).name; document.getElementById('buildModal').classList.remove('hidden'); selectBuildOpt('dir'); }
+function closeBuildModal() { document.getElementById('buildModal').classList.add('hidden'); }
+function selectBuildOpt(opt) { buildOpt = opt; document.querySelectorAll('.build-option').forEach(el => el.classList.remove('selected')); document.getElementById('build-' + opt).classList.add('selected'); }
+function startBuild() {
+  showToast('知识图谱构建任务已启动');
+  closeBuildModal();
+  // 模拟构建完成
+  setTimeout(() => {
+    if (currentDoc) {
+      currentDoc.built = true;
+      localDocs = localDocs.map(d => d.id === currentDoc.id ? currentDoc : d);
+      renderTree();
+      renderDocView();
+      showToast('知识图谱构建完成');
+    }
+  }, 2000);
+}
+
+function createDir() {
+  const name = document.getElementById('newDirInput').value.trim();
+  if (name) {
+    const newId = Math.max(...localDirs.map(d => d.id)) + 1;
+    localDirs.push({ id: newId, name: '目录' + newId + ' - ' + name, open: true });
+    renderTree();
+    showToast('目录"' + name + '"创建成功');
+  }
+  document.getElementById('newDirModal').classList.add('hidden');
+}
+
+function deleteDir(dirId) {
+  const dir = localDirs.find(d => d.id === dirId);
+  if (dir && confirm('确定要删除目录"' + dir.name + '"吗？')) {
+    localDocs = localDocs.filter(d => d.dir !== dirId);
+    localDirs = localDirs.filter(d => d.id !== dirId);
+    if (currentDoc && currentDoc.dir === dirId) { currentDoc = null; renderDocView(); }
+    renderTree();
+    showToast('目录已删除');
+  }
+}
+
+function deleteDoc() {
+  if (currentDoc && confirm('确定要删除文档"' + currentDoc.name + '"吗？')) {
+    localDocs = localDocs.filter(d => d.id !== currentDoc.id);
+    currentDoc = null;
+    renderTree();
+    renderDocView();
+    showToast('文档已删除');
+  }
+}
+
+function searchDocs() {
+  const keyword = document.getElementById('docSearchInput').value.trim().toLowerCase();
+  // 简单过滤显示
+  showToast('搜索功能：' + (keyword || '显示全部'));
+}
+
+function filterType(t) { showToast('筛选功能：' + t); }
+function filterBuilt(t) { showToast('筛选：' + t); }
+
+// 初始化
+renderTree();
+renderDocView();
+</script>
+</body>
+</html>

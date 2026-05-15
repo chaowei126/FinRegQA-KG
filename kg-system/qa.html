@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能问答 - 金融监管知识图谱系统</title>
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .qa-page {display:flex;height:100%;flex-direction:column}
+  .qa-header {padding:20px;border-bottom:0.5px solid #e0e0e0;background:#fff}
+  .qa-title {font-size:16px;font-weight:500;color:#1a1a1a;margin-bottom:4px}
+  .qa-sub {font-size:13px;color:#8c8c8c}
+  .qa-input-area {padding:16px 20px;background:#fff;border-bottom:0.5px solid #e0e0e0}
+  .qa-input-row {display:flex;gap:12px;align-items:flex-end}
+  .qa-input {
+    flex:1;min-height:80px;border:0.5px solid #d9d9d9;border-radius:8px;
+    padding:12px;font-size:13px;resize:none;outline:none;font-family:inherit
+  }
+  .qa-input:focus {border-color:#1677ff}
+  .qa-send-btn {height:80px;padding:0 24px;background:#1677ff;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+  .qa-send-btn:hover {background:#0d6efd}
+  .qa-messages {flex:1;overflow-y:auto;padding:20px}
+  .qa-message {display:flex;gap:12px;margin-bottom:20px}
+  .qa-message.user {flex-direction:row-reverse}
+  .qa-avatar {width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .qa-avatar.ai {background:#e6f4ff;color:#1677ff}
+  .qa-avatar.user {background:#f0f0f0;color:#595959}
+  .qa-bubble {
+    max-width:70%;padding:12px 16px;border-radius:12px;font-size:13px;line-height:1.6
+  }
+  .qa-bubble.ai {background:#fff;border:0.5px solid #e0e0e0;border-radius:0 12px 12px 12px}
+  .qa-bubble.user {background:#1677ff;color:#fff;border-radius:12px 0 12px 12px}
+  .qa-suggestions {display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .qa-suggestion {
+    padding:6px 12px;background:#f5f5f5;border-radius:16px;font-size:12px;
+    color:#595959;cursor:pointer;transition:all 0.15s
+  }
+  .qa-suggestion:hover {background:#e6f4ff;color:#1677ff}
+  .qa-context {background:#f8f9fc;border-radius:8px;padding:12px;margin-top:8px;font-size:12px}
+  .qa-context-title {font-weight:500;color:#1a1a1a;margin-bottom:4px}
+  .qa-context-item {color:#595959;margin-bottom:4px}
+</style>
+</head>
+<body>
+
+<!-- Top Nav -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon">监</div>
+    <div class="logo-text">金融监管知识图谱系统</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('index')">首页</div>
+  <div class="nav-item active" onclick="navigateTo('qa')">智能问答</div>
+  <div class="nav-item kg" id="nav-kg" onclick="toggleKgMenu(event)">
+    知识图谱 ▾
+    <div class="kg-submenu" id="kgSubmenu">
+      <div class="kg-submenu-item" onclick="navigateTo('docs');event.stopPropagation()">文档管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-manage');event.stopPropagation()">图谱管理</div>
+      <div class="kg-submenu-item" onclick="navigateTo('kg-vis');event.stopPropagation()">图谱可视化</div>
+    </div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('users')">用户管理</div>
+  <div class="nav-sep"></div>
+  <div class="user-avatar">管</div>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <div class="content" style="background:#f0f2f5">
+    <div class="qa-page">
+      <div class="qa-header">
+        <div class="qa-title">智能问答</div>
+        <div class="qa-sub">基于知识图谱的智能问答助手，帮助您快速获取金融监管相关信息</div>
+      </div>
+
+      <div class="qa-messages" id="qaMessages">
+        <div class="qa-message ai">
+          <div class="qa-avatar ai">AI</div>
+          <div class="qa-bubble ai">
+            <div>您好！我是金融监管知识图谱问答助手。</div>
+            <div style="margin-top:8px">我可以帮助您解答关于：</div>
+            <div style="margin-top:8px">
+              <div class="qa-suggestions">
+                <span class="qa-suggestion" onclick="askQuestion('商业银行资本充足率的要求是什么？')">资本充足率要求</span>
+                <span class="qa-suggestion" onclick="askQuestion('流动性风险监管指标有哪些？')">流动性风险指标</span>
+                <span class="qa-suggestion" onclick="askQuestion('反洗钱合规要求是什么？')">反洗钱合规</span>
+                <span class="qa-suggestion" onclick="askQuestion('系统重要性银行有哪些？')">系统重要性银行</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qa-input-area">
+        <div class="qa-input-row">
+          <textarea class="qa-input" id="qaInput" placeholder="请输入您的问题... (例如：商业银行资本充足率的要求是什么？)" onkeydown="if(event.key==='Enter' && !event.shiftKey) {event.preventDefault();sendQuestion();}"></textarea>
+          <button class="qa-send-btn" onclick="sendQuestion()">发送</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast hide" id="toast">
+  <span style="color:#52c41a">✓</span>
+  <span id="toastMsg"></span>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script>
+// 示例问答对
+const qaPairs = {
+  '资本充足率': {
+    answer: '根据《商业银行资本管理办法》，商业银行资本充足率要求如下：',
+    context: [
+      '核心一级资本充足率 ≥ 7.5%',
+      '一级资本充足率 ≥ 8.5%',
+      '资本充足率 ≥ 10.5%'
+    ],
+    sources: ['《商业银行资本充足率监管规定》']
+  },
+  '流动性': {
+    answer: '流动性风险监管指标主要包括：',
+    context: [
+      '流动性覆盖率（LCR）≥ 100%',
+      '净稳定资金比例（NSFR）≥ 100%',
+      '流动性比例 ≥ 25%'
+    ],
+    sources: ['《商业银行流动性风险管理办法》']
+  },
+  '反洗钱': {
+    answer: '金融机构反洗钱合规要求包括：',
+    context: [
+      '客户身份识别（KYC）',
+      '大额和可疑交易报告',
+      '客户尽职调查（CDD）',
+      '反洗钱内控制度建设'
+    ],
+    sources: ['《金融机构反洗钱规定》']
+  },
+  '系统重要性银行': {
+    answer: '系统重要性银行是指其经营中断或失败可能对金融体系和经济活动造成严重影响的银行。',
+    context: [
+      '附加资本要求更高',
+      '需制定恢复和处置计划',
+      '接受更严格的监管'
+    ],
+    sources: ['《系统重要性银行评估办法》']
+  }
+};
+
+function sendQuestion() {
+  const input = document.getElementById('qaInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  addMessage(question, 'user');
+  input.value = '';
+
+  // 模拟AI思考
+  setTimeout(() => {
+    const answer = findAnswer(question);
+    addMessage(answer.text, 'ai', answer.context);
+  }, 800);
+}
+
+function askQuestion(q) {
+  document.getElementById('qaInput').value = q;
+  sendQuestion();
+}
+
+function findAnswer(question) {
+  const lowerQ = question.toLowerCase();
+
+  for (const [key, value] of Object.entries(qaPairs)) {
+    if (lowerQ.includes(key)) {
+      return {
+        text: value.answer,
+        context: value.context,
+        sources: value.sources
+      };
+    }
+  }
+
+  // 默认回答
+  return {
+    text: '我正在分析您的问题。根据知识图谱中的相关信息，这个问题涉及多个监管领域。让我为您整理一下...',
+    context: [
+      '相关法规正在检索中',
+      '监管指标正在匹配中',
+      '建议您访问图谱可视化页面查看详细信息'
+    ],
+    sources: []
+  };
+}
+
+function addMessage(text, type, context = null) {
+  const container = document.getElementById('qaMessages');
+  const msgEl = document.createElement('div');
+  msgEl.className = 'qa-message ' + type;
+
+  let content = `<div class="qa-bubble ${type}">${text}`;
+
+  if (type === 'ai' && context && context.length > 0) {
+    content += `<div class="qa-context"><div class="qa-context-title">📊 知识图谱检索结果：</div>${context.map(c => `<div class="qa-context-item">• ${c}</div>`).join('')}</div>`;
+  }
+
+  content += '</div>';
+  msgEl.innerHTML = `<div class="qa-avatar ${type}">${type === 'ai' ? 'AI' : '我'}</div>${content}`;
+  container.appendChild(msgEl);
+  container.scrollTop = container.scrollHeight;
+}
+</script>
+</body>
+</html>
