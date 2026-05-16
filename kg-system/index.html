@@ -60,6 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .badge-pdf{background:#fff1f0;color:#cf1322;border:0.5px solid #ffa39e}
 .badge-xlsx{background:#f6ffed;color:#389e0d;border:0.5px solid #b7eb8f}
 .badge-word{background:#e6f4ff;color:#096dd9;border:0.5px solid #91d5ff}
+.badge-rdf{background:#f9f0ff;color:#531dab;border:0.5px solid #d3adf7}
 .file-name{flex:1;font-size:12px;color:#262626;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .file-status{width:14px;height:14px;flex-shrink:0}
 .status-built{color:#52c41a;font-size:12px}
@@ -130,11 +131,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Micr
 .build-progress{background:#f6ffed;border:0.5px solid #b7eb8f;border-radius:8px;padding:14px 16px;margin-bottom:12px}
 .progress-title{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .progress-dot{width:8px;height:8px;border-radius:50%;background:#52c41a;animation:pulse 1s infinite}
+.progress-dot.warning{background:#fa8c16}
+.progress-dot.success{background:#1677ff}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .progress-label{font-size:13px;font-weight:500;color:#1a1a1a}
 .progress-link{font-size:12px;color:#1677ff;cursor:pointer;margin-left:auto}
 .progress-bar-wrap{background:#e0e0e0;border-radius:4px;height:6px;margin-bottom:6px;overflow:hidden}
 .progress-bar-fill{height:100%;border-radius:4px;background:#52c41a;transition:width 0.5s ease}
+.progress-bar-fill.warning{background:#fa8c16}
+.progress-bar-fill.success{background:#1677ff}
 .progress-pct{font-size:12px;color:#52c41a;text-align:right}
 .progress-step{font-size:12px;color:#8c8c8c}
 /* KG Management */
@@ -412,6 +417,120 @@ table.data-table tr:hover td{background:#fafafe}
   </div>
 </div>
 
+<!-- Incremental Build Modal -->
+<div class="modal-overlay hidden" id="incrementalBuildModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <div class="modal-title">增量构建图谱</div>
+      <div class="modal-close" onclick="document.getElementById('incrementalBuildModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:flex-start;gap:14px;background:#f6ffed;border:0.5px solid #b7eb8f;border-radius:8px;padding:14px;margin-bottom:18px">
+        <div style="font-size:22px;flex-shrink:0;margin-top:-2px">💡</div>
+        <div style="font-size:12px;color:#389e0d;line-height:1.8">
+          <strong style="font-size:13px">增量构建说明</strong><br>
+          仅对<span style="color:#1a1a1a;font-weight:600">新增或未构建</span>的文档进行图谱构建，已构建的文档将跳过，不会重复处理。
+        </div>
+      </div>
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:8px">构建范围</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="incrementalDocList"></div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f9fc;border-radius:6px;font-size:12px;color:#595959">
+        <span>待构建文档</span>
+        <span id="incrDocCount" style="font-weight:600;color:#1677ff;font-size:14px">0 个</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('incrementalBuildModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-success" onclick="doIncrementalBuild()">⚡ 开始增量构建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Full Rebuild Modal -->
+<div class="modal-overlay hidden" id="fullRebuildModal">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <div class="modal-title">全量重建图谱</div>
+      <div class="modal-close" onclick="document.getElementById('fullRebuildModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:flex-start;gap:14px;background:#fff1f0;border:0.5px solid #ffa39e;border-radius:8px;padding:14px;margin-bottom:18px">
+        <div style="font-size:22px;flex-shrink:0;margin-top:-2px">⚠️</div>
+        <div style="font-size:12px;color:#cf1322;line-height:1.8">
+          <strong style="font-size:13px">全量重建警告</strong><br>
+          此操作将<span style="font-weight:600">清空现有图谱数据</span>，然后对<strong>所有文档</strong>重新构建。适合图谱结构需要整体更新时使用。
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:8px">当前图谱状态</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div style="padding:10px 14px;background:#f8f9fc;border-radius:6px;text-align:center">
+            <div id="fullRebuildNodeCount" style="font-size:22px;font-weight:700;color:#1677ff">10</div>
+            <div style="font-size:11px;color:#8c8c8c">当前节点数</div>
+          </div>
+          <div style="padding:10px 14px;background:#f8f9fc;border-radius:6px;text-align:center">
+            <div id="fullRebuildEdgeCount" style="font-size:22px;font-weight:700;color:#722ed1">10</div>
+            <div style="font-size:11px;color:#8c8c8c">当前关系数</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f8f9fc;border-radius:6px;font-size:12px;color:#595959">
+        <span>待重建文档</span>
+        <span style="font-weight:600;color:#1677ff;font-size:14px" id="fullRebuildDocCount">0 个</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('fullRebuildModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="doFullRebuild()">⚡ 开始全量重建</button>
+    </div>
+  </div>
+</div>
+
+<!-- Clear KG Modal -->
+<div class="modal-overlay hidden" id="clearKgModal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <div class="modal-title">清空知识图谱</div>
+      <div class="modal-close" onclick="document.getElementById('clearKgModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:flex-start;gap:14px;background:#fff1f0;border:0.5px solid #ffa39e;border-radius:8px;padding:14px;margin-bottom:16px">
+        <div style="font-size:22px;flex-shrink:0;margin-top:-2px">⛔</div>
+        <div style="font-size:12px;color:#cf1322;line-height:1.8">
+          <strong>危险操作确认</strong><br>
+          此操作将永久删除知识图谱中的<strong>所有节点和关系数据</strong>，文档本身不会被删除，但所有图谱构建状态将被重置。
+        </div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:8px">将清空的数据</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <div style="padding:8px;background:#f8f9fc;border-radius:6px;text-align:center">
+            <div style="font-size:18px;font-weight:700;color:#1677ff" id="clearNodeCount">10</div>
+            <div style="font-size:11px;color:#8c8c8c">节点</div>
+          </div>
+          <div style="padding:8px;background:#f8f9fc;border-radius:6px;text-align:center">
+            <div style="font-size:18px;font-weight:700;color:#722ed1" id="clearEdgeCount">10</div>
+            <div style="font-size:11px;color:#8c8c8c">关系</div>
+          </div>
+          <div style="padding:8px;background:#f8f9fc;border-radius:6px;text-align:center">
+            <div style="font-size:18px;font-weight:700;color:#cf1322" id="clearDocCount">0</div>
+            <div style="font-size:11px;color:#8c8c8c">重置文档</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 14px;background:#fafafa;border-radius:6px;font-size:12px;color:#8c8c8c;text-align:center">
+        此操作不可撤销，请确认您了解操作后果
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('clearKgModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-danger" onclick="doClearKg()">⛔ 确认清空</button>
+    </div>
+  </div>
+</div>
+
 <!-- Build Modal -->
 <div class="modal-overlay hidden" id="buildModal">
   <div class="modal">
@@ -450,6 +569,57 @@ table.data-table tr:hover td{background:#fafafe}
   </div>
 </div>
 
+<!-- Edit Doc Modal -->
+<div class="modal-overlay hidden" id="editDocModal">
+  <div class="modal" style="width:480px">
+    <div class="modal-header">
+      <div class="modal-title">编辑文档信息</div>
+      <div class="modal-close" onclick="document.getElementById('editDocModal').classList.add('hidden')">×</div>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">文档名称</div>
+        <input id="editDocName" style="width:100%;height:34px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor='#1677ff'" onblur="this.style.borderColor='#d9d9d9'" placeholder="请输入文档名称" />
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">文档摘要</div>
+        <textarea id="editDocAbstract" style="width:100%;height:90px;border:0.5px solid #d9d9d9;border-radius:5px;padding:8px 10px;font-size:12px;outline:none;resize:none;line-height:1.7;transition:border-color 0.2s;font-family:inherit" onfocus="this.style.borderColor='#1677ff'" onblur="this.style.borderColor='#d9d9d9'" placeholder="请输入文档摘要（可选）"></textarea>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div style="flex:1">
+          <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">文件类型</div>
+          <input id="editDocType" style="width:100%;height:34px;border:0.5px solid #f0f0f0;border-radius:5px;padding:0 10px;font-size:13px;outline:none;background:#f5f5f5;color:#8c8c8c" readonly />
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">上传者</div>
+          <input id="editDocUploader" style="width:100%;height:34px;border:0.5px solid #d9d9d9;border-radius:5px;padding:0 10px;font-size:13px;outline:none;transition:border-color 0.2s" onfocus="this.style.borderColor='#1677ff'" onblur="this.style.borderColor='#d9d9d9'" placeholder="上传者" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('editDocModal').classList.add('hidden')">取消</button>
+      <button class="btn btn-primary" onclick="saveEditDoc()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Doc Modal -->
+<div class="modal-overlay hidden" id="fullscreenDocModal" style="background:rgba(0,0,0,0.85);z-index:2000">
+  <div style="width:85vw;max-width:1000px;height:85vh;background:#fff;border-radius:10px;display:flex;flex-direction:column;overflow:hidden;position:relative">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:0.5px solid #e0e0e0;flex-shrink:0;background:#fff">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span id="fullscreenDocIcon" style="font-size:20px">📄</span>
+        <span id="fullscreenDocTitle" style="font-size:15px;font-weight:500;color:#1a1a1a"></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-outline" style="font-size:12px" onclick="downloadCurrentDoc()">↓ 下载</button>
+        <span style="cursor:pointer;color:#8c8c8c;font-size:22px;line-height:1" onclick="document.getElementById('fullscreenDocModal').classList.add('hidden')">×</span>
+      </div>
+    </div>
+    <div id="fullscreenDocBody" style="flex:1;overflow-y:auto;padding:32px 48px;font-size:14px;line-height:1.9;color:#434343"></div>
+  </div>
+</div>
+
 <!-- Upload Modal -->
 <div class="modal-overlay hidden" id="uploadModal">
   <div class="modal">
@@ -461,7 +631,7 @@ table.data-table tr:hover td{background:#fafafe}
       <div style="border:1.5px dashed #d9d9d9;border-radius:8px;padding:32px;text-align:center;color:#8c8c8c;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='#1677ff'" onmouseout="this.style.borderColor='#d9d9d9'">
         <div style="font-size:32px;margin-bottom:8px">📄</div>
         <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px">点击或拖拽文件到此区域上传</div>
-        <div style="font-size:12px">支持 PDF、Word、Excel、TXT 格式，单文件不超过 50MB</div>
+        <div style="font-size:12px">支持 RDF、PDF、Word、Excel、TXT 格式，单文件不超过 50MB</div>
       </div>
       <div style="margin-top:12px">
         <div style="font-size:12px;color:#8c8c8c;margin-bottom:6px">上传目录：</div>
@@ -654,6 +824,8 @@ const nodeColors = {
 };
 
 const docs = [
+  {id:10,dir:1,name:'金融监管知识图谱本体模型',type:'rdf',built:false,size:'356 KB',chars:4280,uploader:'admin',date:'2026-05-14 16:30',
+   abstract:'本RDF文件定义了金融监管领域的本体模型，包含监管机构、金融机构、法规文件、监管指标等核心实体类型及其关系属性。'},
   {id:1,dir:1,name:'商业银行资本充足率监管规定',type:'pdf',built:true,size:'2.34 MB',chars:12580,uploader:'admin',date:'2026-05-10 09:30',
    abstract:'本规定依据《商业银行法》及相关法规，对商业银行资本充足率计算方法、最低要求、监控报告等作出详细规定，旨在强化资本约束，防范系统性金融风险。'},
   {id:2,dir:1,name:'银行业监督管理条例',type:'pdf',built:true,size:'1.87 MB',chars:9430,uploader:'admin',date:'2026-05-10 09:45',
@@ -710,7 +882,7 @@ function renderTree(){
       <div class="tree-files" id="dir-files-${dir.id}" style="${dir.open?'':'display:none'}">
         ${dirDocs.map(d=>`
           <div class="tree-file ${currentDoc&&currentDoc.id===d.id?'selected':''}" id="file-${d.id}" onclick="selectDoc(${d.id})">
-            <span class="file-type-badge badge-${d.type==='pdf'?'pdf':d.type==='xlsx'?'xlsx':'word'}">${d.type.toUpperCase()}</span>
+            <span class="file-type-badge badge-${d.type==='pdf'?'pdf':d.type==='xlsx'?'xlsx':d.type==='rdf'?'rdf':'word'}">${d.type.toUpperCase()}</span>
             <span class="file-name">${d.name}</span>
             <span class="${d.built?'status-built':'status-unbuilt'}" title="${d.built?'已构建图谱':'未构建图谱'}">${d.built?'●':'○'}</span>
           </div>`).join('')}
@@ -752,15 +924,15 @@ function renderDocView(){
         <div class="doc-title">${d.name}</div>
         <div class="doc-actions">
           <button class="btn btn-success" onclick="openBuildModal()" style="font-size:12px">⚡ 构建知识图谱</button>
-          <button class="btn btn-outline" style="font-size:12px">✎ 编辑</button>
-          <button class="btn btn-outline" style="font-size:12px">↓ 下载</button>
-          <button class="btn btn-outline" style="font-size:12px">⛶ 全屏</button>
+          <button class="btn btn-outline" style="font-size:12px" onclick="openEditDocModal()">✎ 编辑</button>
+          <button class="btn btn-outline" style="font-size:12px" onclick="downloadCurrentDoc()">↓ 下载</button>
+          <button class="btn btn-outline" style="font-size:12px" onclick="openFullscreenDoc()">⛶ 全屏</button>
           <button class="btn btn-danger" style="font-size:12px" onclick="deleteDoc()">删除</button>
           <span style="cursor:pointer;color:#8c8c8c;font-size:18px;margin-left:4px" onclick="currentDoc=null;renderDocView();renderTree()">×</span>
         </div>
       </div>
       <div class="doc-meta-row">
-        <span class="doc-tag" style="background:${d.type==='pdf'?'#fff1f0':d.type==='xlsx'?'#f6ffed':'#e6f4ff'};color:${d.type==='pdf'?'#cf1322':d.type==='xlsx'?'#389e0d':'#096dd9'};border:0.5px solid ${d.type==='pdf'?'#ffa39e':d.type==='xlsx'?'#b7eb8f':'#91d5ff'}">${d.type.toUpperCase()}</span>
+        <span class="doc-tag" style="background:${d.type==='pdf'?'#fff1f0':d.type==='xlsx'?'#f6ffed':d.type==='rdf'?'#f9f0ff':'#e6f4ff'};color:${d.type==='pdf'?'#cf1322':d.type==='xlsx'?'#389e0d':d.type==='rdf'?'#531dab':'#096dd9'};border:0.5px solid ${d.type==='pdf'?'#ffa39e':d.type==='xlsx'?'#b7eb8f':d.type==='rdf'?'#d3adf7':'#91d5ff'}">${d.type.toUpperCase()}</span>
         ${builtTag}
       </div>
       <div class="doc-info">
@@ -882,6 +1054,54 @@ function renderDocBody(){
   return '';
 }
 
+// ---- KG 增/全量/清空构建 ----
+function openIncrementalBuild(){
+  const unbuilt = docs.filter(d => !d.built);
+  document.getElementById('incrDocCount').textContent = unbuilt.length + ' 个';
+  const list = document.getElementById('incrementalDocList');
+  if(unbuilt.length === 0){
+    list.innerHTML = '<div style="font-size:12px;color:#8c8c8c;padding:8px 0">所有文档已构建完成，无需增量构建。</div>';
+  } else {
+    list.innerHTML = unbuilt.map(d => {
+      const color = {pdf:'#cf1322',xlsx:'#389e0d',word:'#096dd9',rdf:'#531dab'}[d.type] || '#1677ff';
+      return `<span style="padding:4px 10px;background:#f8f9fc;border:0.5px solid #e8e8e8;border-radius:14px;font-size:12px;color:#434343">${d.name}</span>`;
+    }).join('');
+  }
+  document.getElementById('incrementalBuildModal').classList.remove('hidden');
+}
+function doIncrementalBuild(){
+  const unbuilt = docs.filter(d => !d.built);
+  document.getElementById('incrementalBuildModal').classList.add('hidden');
+  showBuildProgress('incremental', unbuilt.length);
+}
+function openFullRebuild(){
+  document.getElementById('fullRebuildNodeCount').textContent = nodeData.length;
+  document.getElementById('fullRebuildEdgeCount').textContent = tripleData.length;
+  document.getElementById('fullRebuildDocCount').textContent = docs.length + ' 个';
+  document.getElementById('fullRebuildModal').classList.remove('hidden');
+}
+function doFullRebuild(){
+  document.getElementById('fullRebuildModal').classList.add('hidden');
+  showBuildProgress('full', docs.length);
+}
+function openClearKg(){
+  document.getElementById('clearNodeCount').textContent = nodeData.length;
+  document.getElementById('clearEdgeCount').textContent = tripleData.length;
+  const unbuiltCount = docs.filter(d => d.built).length;
+  document.getElementById('clearDocCount').textContent = unbuiltCount;
+  document.getElementById('clearKgModal').classList.remove('hidden');
+}
+function doClearKg(){
+  nodeData.splice(0, nodeData.length);
+  tripleData.splice(0, tripleData.length);
+  docs.forEach(d => d.built = false);
+  document.getElementById('clearKgModal').classList.add('hidden');
+  renderTree();
+  renderKgManage();
+  renderVis();
+  showToast('知识图谱已清空，所有文档构建状态已重置');
+}
+
 // ---- Build Modal ----
 function openBuildModal(){
   if(currentDoc){
@@ -897,63 +1117,168 @@ function selectBuildOpt(opt){
   });
 }
 function startBuild(){
+  let count = 0;
+  let label = '';
+  if(buildOpt==='single'){
+    count = 1;
+    label = currentDoc ? currentDoc.name : '当前文档';
+  } else if(buildOpt==='dir'){
+    const dirId = currentDoc ? currentDoc.dir : 1;
+    count = docs.filter(d=>d.dir===dirId&&!d.built).length;
+    label = `目录${dirId}未构建文档`;
+  } else {
+    count = docs.filter(d=>!d.built).length;
+    label = '所有未构建文档';
+  }
+  if(count===0){ showToast('没有需要构建的文档'); closeBuildModal(); return; }
   closeBuildModal();
-  showBuildProgress();
+  showBuildProgress('single', count, label);
 }
 
 // ---- Build Progress ----
-function showBuildProgress(){
+function showBuildProgress(mode, count, label){
+  let modeLabel = {incremental:'增量构建',full:'全量重建',single:'文档构建'}[mode] || '构建';
+  let stepLabels = {
+    incremental:[
+      {pct:10,label:'扫描新增文档...'},
+      {pct:25,label:'提取实体与关系...'},
+      {pct:50,label:'增量写入图数据库...'},
+      {pct:75,label:'更新索引与统计...'},
+      {pct:90,label:'校验数据完整性...'},
+      {pct:100,label:'增量构建完成！'}
+    ],
+    full:[
+      {pct:10,label:'清空现有图谱...'},
+      {pct:20,label:'加载所有文档...'},
+      {pct:35,label:'批量提取实体...'},
+      {pct:55,label:'批量抽取三元组...'},
+      {pct:75,label:'写入图数据库...'},
+      {pct:88,label:'创建索引与约束...'},
+      {pct:95,label:'验证数据一致性...'},
+      {pct:100,label:'全量重建完成！'}
+    ],
+    single:[
+      {pct:15,label:'分析文档结构...'},
+      {pct:30,label:'识别金融实体...'},
+      {pct:50,label:'抽取三元组关系...'},
+      {pct:70,label:'构建本体映射...'},
+      {pct:85,label:'创建约束和索引...'},
+      {pct:95,label:'写入图数据库...'},
+      {pct:100,label:'构建完成！'}
+    ]
+  };
+  const steps = stepLabels[mode] || stepLabels.single;
   const bar=document.getElementById('statsBar');
   bar.innerHTML=`<div class="build-progress" style="flex:1">
     <div class="progress-title">
-      <div class="progress-dot"></div>
-      <div class="progress-label">正在构建知识图谱</div>
-      <div class="progress-link" onclick="hideBuildProgress()">查看详情</div>
+      <div class="progress-dot ${mode==='full'?'warning':mode==='incremental'?'success':''}"></div>
+      <div class="progress-label">${modeLabel}中（${count}个文档）</div>
+      <div class="progress-link" onclick="hideBuildProgress()">收起</div>
     </div>
-    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progFill" style="width:5%"></div></div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill ${mode==='full'?'warning':mode==='incremental'?'success':''}" id="progFill" style="width:0%"></div></div>
     <div style="display:flex;justify-content:space-between">
-      <div class="progress-step" id="progStep">正在提取实体...</div>
-      <div class="progress-pct" id="progPct">5%</div>
+      <div class="progress-step" id="progStep">准备开始...</div>
+      <div class="progress-pct" id="progPct">0%</div>
     </div>
   </div>`;
-  const steps=[
-    {pct:15,label:'正在分析文档结构...'},
-    {pct:30,label:'识别金融实体...'},
-    {pct:50,label:'抽取三元组关系...'},
-    {pct:70,label:'构建本体映射...'},
-    {pct:85,label:'创建约束和索引...'},
-    {pct:95,label:'写入图数据库...'},
-    {pct:100,label:'构建完成！'}
-  ];
+
   let i=0;
   const iv=setInterval(()=>{
     if(i>=steps.length){
       clearInterval(iv);
-      if(currentDoc)currentDoc.built=true;
+      // 完成后更新状态
+      if(mode==='incremental'||mode==='single'){
+        const toMark = mode==='single' ? (currentDoc?[currentDoc]:docs.filter(d=>!d.built).slice(0,count)) : docs.filter(d=>!d.built);
+        toMark.forEach(d=>d.built=true);
+        // 追加模拟图谱数据
+        appendMockKgData(toMark.length);
+      } else       if(mode==='full'){
+        nodeData.splice(0, nodeData.length);
+        tripleData.splice(0, tripleData.length);
+        docs.forEach(d=>d.built=true);
+        appendMockKgData(docs.length, true);
+      }
       renderTree();
+      renderKgManage();
+      renderVis();
       setTimeout(()=>{
         restoreStatsBar();
+        if(currentDoc)currentDoc.built=true;
         renderDocView();
-        showToast('构建完成！处理 1 个文档，提取 45 个三元组，创建 22 个节点，23 个关系');
-      },500);
+        const tip = mode==='full' ? `全量重建完成！共处理 ${count} 个文档，生成 ${nodeData.length} 个节点、${tripleData.length} 个关系` :
+                     mode==='incremental' ? `增量构建完成！处理 ${count} 个文档，新增 45 个节点` :
+                     `构建完成！提取 45 个三元组，创建 22 个节点、23 个关系`;
+        showToast(tip);
+      },400);
       return;
     }
     const s=steps[i++];
     document.getElementById('progFill').style.width=s.pct+'%';
     document.getElementById('progPct').textContent=s.pct+'%';
     document.getElementById('progStep').textContent=s.label;
-  },800);
+  },900);
+}
+function appendMockKgData(docCount, isFull){
+  const prefix = isFull ? '' : '';
+  const startId = nodeData.length + 1;
+  const newNodes = [
+    {name:'信用风险',type:'风险类别'},
+    {name:'操作风险',type:'风险类别'},
+    {name:'市场风险',type:'风险类别'},
+    {name:'杠杆率',type:'监管指标'},
+    {name:'拨备覆盖率',type:'监管指标'},
+    {name:'关联交易',type:'合规要求'},
+    {name:'信息披露',type:'合规要求'},
+    {name:'现场检查',type:'监管要求'},
+    {name:'非现场监管',type:'监管要求'},
+    {name:'行政处罚',type:'处罚事项'},
+    {name:'整改要求',type:'合规要求'},
+    {name:'资本规划',type:'合规要求'}
+  ];
+  const newTriples = [
+    {s:'商业银行',p:'面临',o:'信用风险'},
+    {s:'商业银行',p:'面临',o:'操作风险'},
+    {s:'商业银行',p:'面临',o:'市场风险'},
+    {s:'资本充足率',p:'监管要求',o:'≥10.5%'},
+    {s:'杠杆率',p:'监管要求',o:'≥4%'},
+    {s:'拨备覆盖率',p:'监管要求',o:'≥150%'},
+    {s:'中国银保监会',p:'实施',o:'现场检查'},
+    {s:'中国银保监会',p:'实施',o:'非现场监管'},
+    {s:'中国银保监会',p:'发出',o:'行政处罚'},
+    {s:'金融机构',p:'需遵守',o:'信息披露'}
+  ];
+  const typeMap = {
+    '信用风险':'风险类别','操作风险':'风险类别','市场风险':'风险类别',
+    '杠杆率':'监管指标','拨备覆盖率':'监管指标',
+    '关联交易':'合规要求','信息披露':'合规要求','整改要求':'合规要求','资本规划':'合规要求',
+    '现场检查':'监管要求','非现场监管':'监管要求',
+    '行政处罚':'处罚事项'
+  };
+  const nodeColor = {
+    '监管机构':'#1677ff','法规文件':'#f5222d','金融机构':'#52c41a',
+    '监管指标':'#fa8c16','风险类别':'#722ed1','合规要求':'#fadb14',
+    '处罚事项':'#eb2f96','监管要求':'#13c2c2'
+  };
+  newNodes.slice(0, Math.min(docCount + 3, newNodes.length)).forEach((n, idx) => {
+    nodeData.push({id: startId + idx, name: n.name, type: n.type, rels: 2, triples: 3, source: '批量构建'});
+  });
+  newTriples.slice(0, Math.min(docCount + 2, newTriples.length)).forEach(t => {
+    tripleData.push({s:t.s, sType:typeMap[t.s]||'金融机构', p:t.p, o:t.o, oType:typeMap[t.o]||'合规要求', conf:0.93, source:'批量构建'});
+  });
 }
 function hideBuildProgress(){restoreStatsBar()}
 function restoreStatsBar(){
+  const builtCount = docs.filter(d=>d.built).length;
+  const unbuiltCount = docs.length - builtCount;
   document.getElementById('statsBar').innerHTML=`
     <div class="stat-chip active"><span>目录</span><span class="count">2</span></div>
-    <div class="stat-chip"><span>全部</span><span class="count">9</span></div>
-    <div class="stat-chip"><span>PDF</span><span class="count">6</span></div>
-    <div class="stat-chip"><span>Word</span><span class="count">1</span></div>
-    <div class="stat-chip"><span>Excel</span><span class="count">2</span></div>
-    <div class="stat-chip"><span>✓ 已构建</span><span class="count" id="countBuilt">4</span></div>
-    <div class="stat-chip"><span>✗ 未构建</span><span class="count" id="countUnbuilt">5</span></div>`;
+    <div class="stat-chip"><span>全部</span><span class="count">${docs.length}</span></div>
+    <div class="stat-chip"><span>PDF</span><span class="count">${docs.filter(d=>d.type==='pdf').length}</span></div>
+    <div class="stat-chip"><span>RDF</span><span class="count">${docs.filter(d=>d.type==='rdf').length}</span></div>
+    <div class="stat-chip"><span>Word</span><span class="count">${docs.filter(d=>d.type==='word').length}</span></div>
+    <div class="stat-chip"><span>Excel</span><span class="count">${docs.filter(d=>d.type==='xlsx').length}</span></div>
+    <div class="stat-chip"><span>✓ 已构建</span><span class="count" id="countBuilt">${builtCount}</span></div>
+    <div class="stat-chip"><span>✗ 未构建</span><span class="count" id="countUnbuilt">${unbuiltCount}</span></div>`;
 }
 
 // ---- Page Switch ----
@@ -1047,10 +1372,10 @@ function renderKgManage(){
             <div class="kg-page-sub">管理金融监管知识图谱，同步文档数据到图数据库</div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-success">⊕ 增量构建图谱</button>
-            <button class="btn btn-primary">↺ 全量重建图谱</button>
-            <button class="btn btn-danger">⊖ 清空图谱</button>
-            <button class="btn btn-outline">↺ 刷新统计</button>
+            <button class="btn btn-success" onclick="openIncrementalBuild()">⊕ 增量构建图谱</button>
+            <button class="btn btn-primary" onclick="openFullRebuild()">↺ 全量重建图谱</button>
+            <button class="btn btn-danger" onclick="openClearKg()">⊖ 清空图谱</button>
+            <button class="btn btn-outline" onclick="renderKgManage()">↺ 刷新统计</button>
           </div>
         </div>
       </div>
@@ -1986,6 +2311,105 @@ function deleteDoc(){
     renderDocView();
     showToast('文档已删除');
   }
+}
+
+// ---- 编辑文档 ----
+function openEditDocModal(){
+  if(!currentDoc) return;
+  const d = currentDoc;
+  document.getElementById('editDocName').value = d.name;
+  document.getElementById('editDocAbstract').value = d.abstract || '';
+  document.getElementById('editDocType').value = d.type.toUpperCase();
+  document.getElementById('editDocUploader').value = d.uploader;
+  document.getElementById('editDocModal').classList.remove('hidden');
+}
+function saveEditDoc(){
+  if(!currentDoc) return;
+  const name = document.getElementById('editDocName').value.trim();
+  if(!name){ showToast('文档名称不能为空'); return; }
+  currentDoc.name = name;
+  currentDoc.abstract = document.getElementById('editDocAbstract').value.trim();
+  currentDoc.uploader = document.getElementById('editDocUploader').value.trim() || currentDoc.uploader;
+  document.getElementById('editDocModal').classList.add('hidden');
+  renderTree();
+  renderDocView();
+  showToast('文档信息已保存');
+}
+
+// ---- 下载文档 ----
+function downloadCurrentDoc(){
+  if(!currentDoc) return;
+  // 生成一个模拟文本内容并触发下载
+  const content = currentDoc.abstract
+    ? `文档名称：${currentDoc.name}\n文件类型：${currentDoc.type.toUpperCase()}\n上传者：${currentDoc.uploader}\n上传时间：${currentDoc.date}\n\n摘要：\n${currentDoc.abstract}`
+    : `文档名称：${currentDoc.name}\n文件类型：${currentDoc.type.toUpperCase()}\n上传者：${currentDoc.uploader}\n上传时间：${currentDoc.date}`;
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${currentDoc.name}.${currentDoc.type}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('文件下载中…');
+}
+
+// ---- 全屏预览 ----
+function openFullscreenDoc(){
+  if(!currentDoc) return;
+  const d = currentDoc;
+  const iconMap = { pdf:'📄', xlsx:'📊', word:'📝', rdf:'🔗' };
+  document.getElementById('fullscreenDocIcon').textContent = iconMap[d.type] || '📄';
+  document.getElementById('fullscreenDocTitle').textContent = d.name + '.' + d.type;
+
+  let bodyHtml = '';
+  if(d.type === 'xlsx'){
+    bodyHtml = `<div style="text-align:center;padding:60px 0;color:#8c8c8c">
+      <div style="font-size:48px;margin-bottom:16px">📊</div>
+      <div style="font-size:16px;font-weight:500;color:#1a1a1a;margin-bottom:8px">${d.name}</div>
+      <div style="font-size:13px">Excel 文件暂不支持在线预览，请点击右上角"下载"后查看。</div>
+    </div>`;
+  } else if(d.type === 'rdf'){
+    bodyHtml = `<div style="font-family:monospace;font-size:13px;background:#f8f9fc;border-radius:8px;padding:24px;line-height:2;color:#434343">
+      <div style="color:#8c8c8c;margin-bottom:16px;font-family:sans-serif;font-size:12px">— RDF/XML 本体文件预览 —</div>
+      <span style="color:#096dd9">&lt;?xml</span> <span style="color:#389e0d">version</span>="1.0" encoding="UTF-8"<span style="color:#096dd9">?&gt;</span><br>
+      <span style="color:#096dd9">&lt;rdf:RDF</span><br>
+      &nbsp;&nbsp;<span style="color:#389e0d">xmlns:rdf</span>="http://www.w3.org/1999/02/22-rdf-syntax-ns#"<br>
+      &nbsp;&nbsp;<span style="color:#389e0d">xmlns:owl</span>="http://www.w3.org/2002/07/owl#"<br>
+      &nbsp;&nbsp;<span style="color:#389e0d">xmlns:rdfs</span>="http://www.w3.org/2000/01/rdf-schema#"<br>
+      &nbsp;&nbsp;<span style="color:#389e0d">xmlns:fs</span>="http://kg.finance-reg.cn/ontology#"<span style="color:#096dd9">&gt;</span><br><br>
+      &nbsp;&nbsp;<span style="color:#cf1322">&lt;!-- 核心实体类 --&gt;</span><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;owl:Class</span> <span style="color:#389e0d">rdf:about</span>="fs:RegulatoryBody"<span style="color:#096dd9">&gt;</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#096dd9">&lt;rdfs:label</span> xml:lang="zh"<span style="color:#096dd9">&gt;</span>监管机构<span style="color:#096dd9">&lt;/rdfs:label&gt;</span><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;/owl:Class&gt;</span><br><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;owl:Class</span> <span style="color:#389e0d">rdf:about</span>="fs:FinancialInstitution"<span style="color:#096dd9">&gt;</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#096dd9">&lt;rdfs:label</span> xml:lang="zh"<span style="color:#096dd9">&gt;</span>金融机构<span style="color:#096dd9">&lt;/rdfs:label&gt;</span><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;/owl:Class&gt;</span><br><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;owl:ObjectProperty</span> <span style="color:#389e0d">rdf:about</span>="fs:supervises"<span style="color:#096dd9">&gt;</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#096dd9">&lt;rdfs:label</span> xml:lang="zh"<span style="color:#096dd9">&gt;</span>监管<span style="color:#096dd9">&lt;/rdfs:label&gt;</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#096dd9">&lt;rdfs:domain</span> <span style="color:#389e0d">rdf:resource</span>="fs:RegulatoryBody"<span style="color:#096dd9">/&gt;</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#096dd9">&lt;rdfs:range</span> <span style="color:#389e0d">rdf:resource</span>="fs:FinancialInstitution"<span style="color:#096dd9">/&gt;</span><br>
+      &nbsp;&nbsp;<span style="color:#096dd9">&lt;/owl:ObjectProperty&gt;</span><br>
+      <span style="color:#096dd9">&lt;/rdf:RDF&gt;</span>
+    </div>`;
+  } else {
+    bodyHtml = `
+      <h2 style="font-size:20px;font-weight:600;text-align:center;margin-bottom:6px;color:#1a1a1a">${d.name}</h2>
+      <div style="text-align:center;color:#8c8c8c;font-size:12px;margin-bottom:24px">上传者：${d.uploader} &nbsp;·&nbsp; ${d.date} &nbsp;·&nbsp; ${d.size}</div>
+      ${d.abstract ? `<div style="background:#f8f9fc;border-left:3px solid #1677ff;padding:14px 18px;border-radius:0 6px 6px 0;margin-bottom:24px;font-size:13px;line-height:1.8;color:#434343"><strong style="color:#1677ff">摘要：</strong>${d.abstract}</div>` : ''}
+      <div style="font-size:14px;line-height:2;color:#434343">
+        <strong>第一章 总则</strong><br>
+        第一条 为规范金融机构经营行为，防范金融风险，维护金融稳定，依据《中华人民共和国银行业监督管理法》、《中华人民共和国商业银行法》等法律法规，制定本规定。<br><br>
+        第二条 本规定适用于在中华人民共和国境内设立的商业银行、政策性银行及其在境内外的分支机构。<br><br>
+        第三条 金融机构应当按照本规定要求，建立健全内部风险控制体系，确保各项监管指标持续达标，并按规定向监管部门报告。<br><br>
+        <strong>第二章 监管指标</strong><br>
+        第四条 金融机构应当持续满足资本充足率、流动性覆盖率、净稳定资金比例等核心监管指标要求，具体标准按照监管机构发布的相关规定执行。<br><br>
+        第五条 金融机构应当建立监管指标日常监测机制，对接近或触及监管红线的指标及时采取纠偏措施，并向监管机构报告。
+      </div>`;
+  }
+  document.getElementById('fullscreenDocBody').innerHTML = bodyHtml;
+  document.getElementById('fullscreenDocModal').classList.remove('hidden');
 }
 function showBuildDir(dirId){
   const dir=dirs.find(d=>d.id===dirId);
